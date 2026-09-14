@@ -1,6 +1,9 @@
 package dev.cowclient.ui;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.AddressMode;
+import com.mojang.blaze3d.textures.FilterMode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -32,7 +35,7 @@ public final class Surface implements AutoCloseable {
         g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS,RenderingHints.VALUE_FRACTIONALMETRICS_ON);
         try { painter.accept(g); } finally { g.dispose(); }
         if(texture==null) {
-            texture=new DynamicTexture(()->"CowClient UI",new NativeImage(width,height,false));
+            texture=new DynamicTexture(()->"CowClient UI",new NativeImage(width,height,false)) {{ sampler=RenderSystem.getSamplerCache().getSampler(AddressMode.CLAMP_TO_EDGE,AddressMode.CLAMP_TO_EDGE,FilterMode.LINEAR,FilterMode.LINEAR,false); }};
             Minecraft.getInstance().getTextureManager().register(id,texture);
         }
         int[] pixels=((DataBufferInt)bitmap.getRaster().getDataBuffer()).getData();

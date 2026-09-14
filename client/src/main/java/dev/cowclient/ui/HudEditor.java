@@ -12,6 +12,7 @@ public final class HudEditor extends Screen {
     private double dx,dy;
     public HudEditor(){super(Component.literal("CowClient HUD editor"));}
     @Override public boolean isPauseScreen(){return false;}
+    @Override public void renderBackground(GuiGraphics g,int mx,int my,float delta) {g.fill(0,0,width,height,0x22101310);}
     @Override public void render(GuiGraphics g,int mx,int my,float delta) {
         g.drawCenteredString(font,"Drag your HUD panels · Esc to save",width/2,height-24,0xffefefdf);
         for(var b:Hud.bounds()) g.renderOutline(b.x()-1,b.y()-1,b.width()+2,b.height()+2,b.contains(mx,my)?0xffc3ed91:0x666b7b60);

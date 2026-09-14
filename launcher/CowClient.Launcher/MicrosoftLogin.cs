@@ -72,7 +72,8 @@ public sealed class MicrosoftLogin : IDisposable {
             CryptographicOperations.ZeroMemory(plain);
             Directory.CreateDirectory(SettingsStore.Root);
             string tmp=tokenPath+".tmp";
-            await File.WriteAllBytesAsync(tmp,encrypted,ct);File.Move(tmp,tokenPath,true);
+            try { await File.WriteAllBytesAsync(tmp,encrypted,ct);File.Move(tmp,tokenPath,true); }
+            finally { if(File.Exists(tmp))File.Delete(tmp); }
         }
         return new MSession(Str(profile,"name"),access,Str(profile,"id")){UserType="msa"};
     }

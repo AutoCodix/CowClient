@@ -101,9 +101,11 @@ public final class CowScreen extends Screen {
         }
         button(g,"Back to modules",250,568,242,46,()->{detail="";focus=-1;});
     }
-    @Override public void render(GuiGraphics g,int mx,int my,float delta) {
+    @Override public void renderBackground(GuiGraphics g,int mx,int my,float delta) {
         if(CowClient.config.data.blur) super.renderBackground(g,mx,my,delta);
         else g.fill(0,0,width,height,0x88101310);
+    }
+    @Override public void render(GuiGraphics g,int mx,int my,float delta) {
         double elapsed=(System.nanoTime()-opened)/1e9;
         double progress=CowClient.active("motion")?1:Math.min(1,elapsed/.22);
         double ease=1-Math.pow(1-progress,3);
