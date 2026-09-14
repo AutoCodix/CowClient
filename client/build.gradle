@@ -15,3 +15,7 @@ java { toolchain.languageVersion = JavaLanguageVersion.of(21); withSourcesJar() 
 tasks.withType(JavaCompile).configureEach { options.release = 21; options.encoding = 'UTF-8' }
 processResources { inputs.property 'version', project.version; filesMatching('fabric.mod.json') { expand 'version': project.version } }
 test { useJUnitPlatform() }
+
+if (project.hasProperty('smokeTest')) {
+    loom { runs { client { vmArg '-Dcowclient.smoke=true' } } }
+}

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>CowClient</AssemblyName>
+    <RootNamespace>CowClient.Launcher</RootNamespace>
+    <ApplicationIcon>../../branding/cow.ico</ApplicationIcon>
+    <Version>0.1.0</Version>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CmlLib.Core" Version="4.0.6"/>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0"/>
+    <Resource Include="../../branding/cow.png" Link="Assets/cow.png"/>
+    <Content Include="Payload/**/*" CopyToOutputDirectory="PreserveNewest"/>
+  </ItemGroup>
+</Project>

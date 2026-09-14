@@ -48,6 +48,7 @@ public final class CowClient implements ClientModInitializer {
             else if(heldSprint) client.options.keySprint.setDown(false);
             heldSprint=force;
         });
+        SmokeTest.install();
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,Identifier.fromNamespaceAndPath("cowclient","hud"),(g,d)->Hud.render(g));
     }
     public static boolean active(String id) { return config!=null && config.enabled(id); }

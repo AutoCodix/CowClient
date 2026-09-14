@@ -29,6 +29,21 @@ jobs:
       - name: Build and test remapped client
         working-directory: client
         run: gradle build --no-daemon --stacktrace
+      - name: Smoke-test Minecraft UI in a virtual display
+        working-directory: client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libxrandr2 libxinerama1 libxcursor1 libxi6 libasound2t64
+          xvfb-run -a -s "-screen 0 1280x800x24" timeout 240s gradle runClient -PsmokeTest --no-daemon
+          test -f run/cowclient-smoke.png
+          grep -q COWCLIENT_SMOKE_OK run/logs/latest.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: client-runtime-check
+          path: |
+            client/run/cowclient-smoke.png
+            client/run/logs/latest.log
       - uses: actions/upload-artifact@v4
         with:
           name: CowClient-Fabric-1.21.11
@@ -45,3 +60,50 @@ jobs:
         with:
           name: client-test-results
           path: client/build/reports/tests/
+
+  launcher:
+    needs: client
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/download-artifact@v4
+        with:
+          name: CowClient-branding
+          path: branding
+      - uses: actions/download-artifact@v4
+        with:
+          name: CowClient-Fabric-1.21.11
+          path: launcher/CowClient.Launcher/Payload
+      - name: Prepare client payload
+        shell: pwsh
+        run: |
+          $payload = "launcher/CowClient.Launcher/Payload"
+          Move-Item "$payload/CowClient-0.1.0-alpha.jar" "$payload/CowClient.jar"
+          (Get-FileHash "$payload/CowClient.jar" -Algorithm SHA512).Hash | Set-Content "$payload/CowClient.sha512"
+      - name: Test launcher
+        run: dotnet test launcher/CowClient.Tests/CowClient.Tests.csproj --configuration Release --logger "trx;LogFileName=tests.trx"
+      - name: Publish self-contained Windows launcher
+        run: dotnet publish launcher/CowClient.Launcher/CowClient.Launcher.csproj --configuration Release --runtime win-x64 --self-contained true -o out/CowClient
+      - name: Smoke-test Windows launcher and capture UI
+        shell: pwsh
+        run: |
+          $launcher = Start-Process -FilePath "out/CowClient/CowClient.exe" -ArgumentList "--smoke-test", "$pwd/out/launcher.png" -PassThru
+          if (-not $launcher.WaitForExit(30000)) { Stop-Process -Id $launcher.Id; throw "Launcher smoke test timed out" }
+          if ($launcher.ExitCode -ne 0) { throw "Launcher smoke test failed" }
+          if (-not (Test-Path "out/launcher.png")) { throw "Launcher screenshot missing" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CowClient-Windows-x64
+          path: out/CowClient/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: launcher-verification
+          path: |
+            out/launcher.png
+            launcher/CowClient.Tests/TestResults/
