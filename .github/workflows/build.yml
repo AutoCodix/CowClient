@@ -95,6 +95,7 @@ jobs:
           if (-not $launcher.WaitForExit(30000)) { Stop-Process -Id $launcher.Id; throw "Launcher smoke test timed out" }
           if ($launcher.ExitCode -ne 0) { throw "Launcher smoke test failed" }
           if (-not (Test-Path "out/launcher.png")) { throw "Launcher screenshot missing" }
+          Write-Host ("COWCLIENT_LAUNCHER_PNG:" + [Convert]::ToBase64String([IO.File]::ReadAllBytes("$pwd/out/launcher.png")))
       - uses: actions/upload-artifact@v4
         with:
           name: CowClient-Windows-x64
