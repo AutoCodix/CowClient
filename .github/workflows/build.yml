@@ -1,0 +1,47 @@
+name: Build CowClient
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: cowclient-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  client:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Generate vector assets
+        run: |
+          python -m pip install cairosvg==2.8.2 pillow==11.3.0
+          python tools/build_assets.py
+      - name: Build and test remapped client
+        working-directory: client
+        run: gradle build --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CowClient-Fabric-1.21.11
+          path: client/build/libs/CowClient-0.1.0-alpha.jar
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CowClient-branding
+          path: |
+            branding/cow.png
+            branding/cow.ico
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: client-test-results
+          path: client/build/reports/tests/

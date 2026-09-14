@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "cowclient",
+  "version": "${version}",
+  "name": "CowClient",
+  "description": "A quieter Minecraft client. Rounded UI, movable HUD and focused utilities.",
+  "authors": [
+    "AutoCodix"
+  ],
+  "environment": "client",
+  "icon": "assets/cowclient/icon.png",
+  "entrypoints": {
+    "client": [
+      "dev.cowclient.CowClient"
+    ]
+  },
+  "mixins": [
+    "cowclient.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "minecraft": "1.21.11",
+    "java": ">=21",
+    "fabric-api": ">=0.141.1"
+  }
+}

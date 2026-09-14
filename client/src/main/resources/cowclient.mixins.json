@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "dev.cowclient.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "CameraMixin",
+    "MouseMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
