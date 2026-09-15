@@ -4,7 +4,7 @@
  <Application.Resources>
   <SolidColorBrush x:Key="Ink" Color="#EFEFDF"/>
   <SolidColorBrush x:Key="Muted" Color="#959F8C"/>
-  <Style TargetType="TextBlock"><Setter Property="Foreground" Value="{StaticResource Ink}"/><Setter Property="FontFamily" Value="Segoe UI"/><Setter Property="FontSize" Value="14"/></Style>
+  <Style TargetType="TextBlock"><Setter Property="FontFamily" Value="Segoe UI"/><Setter Property="FontSize" Value="14"/></Style>
   <Style TargetType="Button">
    <Setter Property="Foreground" Value="#EFEFDF"/><Setter Property="Background" Value="#252E20"/>
    <Setter Property="BorderBrush" Value="#3B4733"/><Setter Property="BorderThickness" Value="0"/>
