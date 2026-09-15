@@ -2,32 +2,33 @@
  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
  xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
- Title="CowClient" Width="1180" Height="760" MinWidth="1000" MinHeight="700"
+ Title="CowClient" Width="1200" Height="820" MinWidth="1000" MinHeight="740"
  WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="CanResize"
- Background="#101310" Foreground="#EFEFDF" FontFamily="Segoe UI"
- TextOptions.TextFormattingMode="Display" UseLayoutRounding="True">
+ Background="#101016" Foreground="#F4F3FA" FontFamily="{StaticResource BodyFont}" FontSize="14"
+ TextOptions.TextFormattingMode="Ideal" TextOptions.TextRenderingMode="ClearType" UseLayoutRounding="True">
  <shell:WindowChrome.WindowChrome><shell:WindowChrome CaptionHeight="0" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="20"/></shell:WindowChrome.WindowChrome>
- <Border CornerRadius="20" BorderThickness="1" BorderBrush="#303A29" Background="#101310">
+ <Border CornerRadius="20" BorderThickness="1" BorderBrush="#302C3D" Background="#101016">
  <Grid>
   <Grid.ColumnDefinitions><ColumnDefinition Width="208"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-  <Border Background="#171B16" CornerRadius="20,0,0,20"/>
+  <Border Background="#15141C" CornerRadius="20,0,0,20"/>
   <Grid Grid.Column="0" Margin="16,20,16,20">
    <Grid.RowDefinitions><RowDefinition Height="80"/><RowDefinition Height="*"/><RowDefinition Height="110"/></Grid.RowDefinitions>
    <StackPanel Orientation="Horizontal"><Image Source="Assets/cow.png" Width="49" Height="50"/><TextBlock Text="cowclient" FontSize="21" FontWeight="SemiBold" VerticalAlignment="Center" Margin="12,0,0,0"/></StackPanel>
    <StackPanel Grid.Row="1">
-    <TextBlock Text="PLAY" FontSize="10" Foreground="{StaticResource Muted}" Margin="12,10,0,20"/>
-    <Button Content="Home" HorizontalContentAlignment="Left" Click="Home_Click" Margin="0,0,0,10"/>
-    <Button Content="Profiles" HorizontalContentAlignment="Left" Click="Profiles_Click" Background="Transparent" Margin="0,0,0,10"/>
-    <Button Content="Settings" HorizontalContentAlignment="Left" Click="Settings_Click" Background="Transparent"/>
-    <TextBlock Text="YOUR SPACE" FontSize="10" Foreground="{StaticResource Muted}" Margin="12,80,0,20"/>
+    <TextBlock Text="YOUR LAUNCHER" FontSize="10" Foreground="{StaticResource Muted}" Margin="12,10,0,20"/>
+    <Button x:Name="HomeNav" Content="Home" HorizontalContentAlignment="Left" Click="Home_Click" Margin="0,0,0,10"/>
+    <Button x:Name="ProfilesNav" Content="Profiles" HorizontalContentAlignment="Left" Click="Profiles_Click" Background="Transparent" Margin="0,0,0,10"/>
+    <Button x:Name="SettingsNav" Content="Settings" HorizontalContentAlignment="Left" Click="Settings_Click" Background="Transparent"/>
+    <TextBlock Text="QUICK ACCESS" FontSize="10" Foreground="{StaticResource Muted}" Margin="12,80,0,20"/>
     <Button Content="Open game folder" FontSize="12" HorizontalContentAlignment="Left" Click="Folder_Click" Background="Transparent" Margin="0,0,0,10"/>
+    <Button Content="Replay intro" FontSize="12" HorizontalContentAlignment="Left" Click="ReplayIntro_Click" Background="Transparent" Margin="0,0,0,10"/>
     <Button Content="Build notes" FontSize="12" HorizontalContentAlignment="Left" Click="Notes_Click" Background="Transparent"/>
    </StackPanel>
    <StackPanel Grid.Row="2" VerticalAlignment="Bottom">
-    <Border Background="#22271E" CornerRadius="14" Padding="13,12">
+    <Border Background="#211B2D" CornerRadius="14" Padding="13,12">
      <StackPanel>
       <TextBlock x:Name="AccountName" Text="Microsoft account" FontSize="12" TextTrimming="CharacterEllipsis"/>
-      <Button x:Name="LoginButton" Content="Sign in to play" FontSize="12" HorizontalContentAlignment="Left" Padding="0,10,0,2" Background="Transparent" Foreground="#C3ED91" Click="Login_Click"/>
+      <Button x:Name="LoginButton" Content="Sign in to play" FontSize="12" HorizontalContentAlignment="Left" Padding="0,10,0,2" Background="Transparent" Foreground="#B397E7" Click="Login_Click"/>
      </StackPanel>
     </Border>
    </StackPanel>
@@ -35,61 +36,59 @@
   <Grid Grid.Column="1">
    <Grid.RowDefinitions><RowDefinition Height="108"/><RowDefinition Height="*"/><RowDefinition Height="92"/></Grid.RowDefinitions>
    <Grid MouseLeftButtonDown="Title_Drag" Background="Transparent">
-    <StackPanel Margin="36,29,100,0"><TextBlock Text="Make yourself at home." FontSize="26" FontWeight="SemiBold"/><TextBlock Text="Minecraft, with a little more you." Foreground="{StaticResource Muted}" Margin="0,10,0,0"/></StackPanel>
+    <StackPanel Margin="36,29,100,0"><TextBlock Text="Welcome home." FontSize="26" FontWeight="SemiBold"/><TextBlock Text="Your next session starts here." Foreground="{StaticResource Muted}" Margin="0,10,0,0"/></StackPanel>
     <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Orientation="Horizontal" Margin="0,14,15,0">
      <Button Content="—" ToolTip="Minimize" Background="Transparent" Padding="12,6" Click="Minimize_Click"/>
      <Button Content="×" ToolTip="Close" Background="Transparent" FontSize="20" Padding="12,2" Click="Close_Click"/>
     </StackPanel>
    </Grid>
    <Grid Grid.Row="1" Margin="36,16,36,0">
-    <Grid x:Name="HomePanel">
-     <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="188"/></Grid.RowDefinitions>
-     <Border Background="#293A26" CornerRadius="20" ClipToBounds="True">
-      <Grid Margin="30">
-       <Grid.ColumnDefinitions><ColumnDefinition Width="1.35*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-       <StackPanel VerticalAlignment="Center">
-        <TextBlock Text="COWCLIENT  /  EARLY ACCESS" FontSize="11" FontWeight="SemiBold" Foreground="#CBDDB8"/>
-        <TextBlock Text="Settle in.&#10;Play your way." FontSize="44" FontWeight="SemiBold" LineHeight="55" Margin="0,22,0,18"/>
-        <TextBlock Text="Your HUD. Your setup. Your next session." Foreground="#B7C8AB" FontSize="13"/>
-        <Button Content="Explore your setup" HorizontalAlignment="Left" Background="#ECEFDD" Foreground="#192316" Margin="0,25,0,0" Click="Profiles_Click"/>
-       </StackPanel>
-       <Image Grid.Column="1" Source="Assets/cow.png" VerticalAlignment="Center" Margin="0,20,0,0"/>
-      </Grid>
-     </Border>
-     <StackPanel Grid.Row="1" Margin="0,25,0,0">
-      <TextBlock Text="Your next session" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,17"/>
-      <Border Background="#1D231B" CornerRadius="18" Padding="24">
-       <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-        <StackPanel VerticalAlignment="Center"><TextBlock Text="CowClient" FontSize="22" FontWeight="SemiBold"/><TextBlock x:Name="SessionInfo" Text="Minecraft 1.21.11  ·  Fabric  ·  4 GB RAM" Foreground="{StaticResource Muted}" FontSize="13" Margin="0,9,0,0"/></StackPanel>
-        <Button x:Name="LaunchButton" Grid.Column="1" Content="Launch Minecraft  →" Width="238" Height="46" Background="#C3ED91" Foreground="#172114" Click="Launch_Click"/>
-       </Grid>
-      </Border>
-     </StackPanel>
-    </Grid>
+    <ScrollViewer x:Name="HomePanel" VerticalScrollBarVisibility="Auto"><StackPanel>
+<Border CornerRadius="20" BorderBrush="#554073" BorderThickness="1" Height="245" ClipToBounds="True">
+<Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#352448" Offset="0"/><GradientStop Color="#241B39" Offset="0.6"/><GradientStop Color="#171D2D" Offset="1"/></LinearGradientBrush></Border.Background>
+<Grid>
+<Viewbox HorizontalAlignment="Right" Width="400" Opacity="0.8"><Canvas Width="480" Height="280" ClipToBounds="True"><Ellipse Width="220" Height="220" Canvas.Left="170" Canvas.Top="-55" Stroke="#735697" StrokeThickness="1"/><Ellipse Width="280" Height="280" Canvas.Left="140" Canvas.Top="-85" Stroke="#50415F" StrokeThickness="1"/><Ellipse Width="136" Height="136" Canvas.Left="212" Canvas.Top="-10" Fill="#51406B" Opacity="0.5"/><Path Data="M 0,260 C 90,165 140,196 230,137 C 320,95 385,175 480,140 L 480,280 L 0,280 Z" Fill="#443452"/><Path Data="M 0,280 C 170,200 250,264 360,195 C 405,168 448,185 480,180 L 480,280 Z" Fill="#282D40"/><Ellipse Width="3" Height="3" Fill="#DDD0ED" Canvas.Left="127" Canvas.Top="42"/><Ellipse Width="2" Height="2" Fill="#DDD0ED" Canvas.Left="376" Canvas.Top="74"/><Ellipse Width="3" Height="3" Fill="#DDD0ED" Canvas.Left="425" Canvas.Top="28"/></Canvas></Viewbox>
+<Image Source="Assets/cow.png" Width="235" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,32,18,0" RenderOptions.BitmapScalingMode="HighQuality"><Image.Effect><DropShadowEffect Color="#08070E" BlurRadius="22" ShadowDepth="10" Opacity="0.45"/></Image.Effect></Image>
+<StackPanel Margin="26,22,240,20" VerticalAlignment="Center"><TextBlock Text="COWCLIENT / LAUNCHER 02" FontSize="10" FontWeight="SemiBold" Foreground="#CEB6FA"/>
+<TextBlock Text="A little more you.&#10;A lot more Minecraft." FontFamily="{StaticResource DisplayFont}" FontSize="30" FontWeight="Bold" LineHeight="37" Margin="0,14,0,12"/>
+<TextBlock Text="Your HUD. Your controls. Your way to play." FontSize="12" Foreground="#C0B6CF"/>
+<StackPanel Orientation="Horizontal" Margin="0,20,0,0"><Border Background="#443151" CornerRadius="6" Padding="9,5"><TextBlock Text="16 MODULES" FontSize="9"/></Border><Border Background="#443151" CornerRadius="6" Padding="9,5" Margin="8,0,0,0"><TextBlock Text="3 PROFILES" FontSize="9"/></Border><Border Background="#443151" CornerRadius="6" Padding="9,5" Margin="8,0,0,0"><TextBlock Text="FABRIC" FontSize="9"/></Border></StackPanel>
+</StackPanel></Grid></Border>
+<Border Style="{StaticResource Card}" Margin="0,16,0,0" Background="#201B2A"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+<StackPanel VerticalAlignment="Center"><TextBlock Text="YOUR NEXT SESSION" FontSize="9" Foreground="#AF94D4" FontWeight="SemiBold"/><TextBlock x:Name="SelectedProfile" Text="Default profile" FontSize="21" FontWeight="SemiBold" Margin="0,6,0,0"/><TextBlock x:Name="SessionInfo" Foreground="{StaticResource Muted}" FontSize="11" Margin="0,6,0,0"/></StackPanel>
+<Button x:Name="LaunchButton" Grid.Column="1" Content="Launch Minecraft  →" Width="220" Height="50" Style="{StaticResource Primary}" Click="Launch_Click"/></Grid></Border>
+<Grid Margin="0,22,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="1.7*"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+<StackPanel><TextBlock Text="Pick your pace" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/><UniformGrid Columns="3">
+<Button Tag="Default" Click="Profile_Click" Padding="11,16" Margin="0,0,7,0" HorizontalContentAlignment="Left"><StackPanel><TextBlock Text="01" Foreground="#A58EBE" FontSize="10"/><TextBlock Text="Default" FontSize="14" Margin="0,12,0,5"/><TextBlock Text="The essentials" FontSize="10" Foreground="{StaticResource Muted}"/></StackPanel></Button>
+<Button Tag="Competitive" Click="Profile_Click" Padding="9,16" Margin="0,0,7,0" HorizontalContentAlignment="Left"><StackPanel><TextBlock Text="02" Foreground="#A58EBE" FontSize="10"/><TextBlock Text="Competitive" FontSize="12" Margin="0,12,0,5"/><TextBlock Text="Stay focused" FontSize="10" Foreground="{StaticResource Muted}"/></StackPanel></Button>
+<Button Tag="Chill" Click="Profile_Click" Padding="11,16" HorizontalContentAlignment="Left"><StackPanel><TextBlock Text="03" Foreground="#A58EBE" FontSize="10"/><TextBlock Text="Chill" FontSize="14" Margin="0,12,0,5"/><TextBlock Text="Take your time" FontSize="10" Foreground="{StaticResource Muted}"/></StackPanel></Button>
+</UniformGrid><Border Style="{StaticResource Card}" Margin="0,12,0,0" Padding="13"><Grid><TextBlock Text="Make the HUD yours" FontSize="11"/><TextBlock Text="RIGHT SHIFT" FontSize="9" Foreground="#C2A8F1" HorizontalAlignment="Right"/></Grid></Border></StackPanel>
+<Border Grid.Column="2" Style="{StaticResource Card}" Padding="17"><StackPanel><TextBlock Text="NEW IN LAUNCHER 02" Foreground="#AF94D4" FontSize="9"/><TextBlock Text="A fresh start." FontSize="20" FontWeight="SemiBold" Margin="0,12,0,10"/><TextBlock Text="A new home, a short intro, and a clearer path into your account." Foreground="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap" LineHeight="19"/><Button Content="Explore your setup →" Click="Profiles_Click" Padding="8,9" FontSize="10" Margin="0,14,0,0"/></StackPanel></Border>
+</Grid></StackPanel></ScrollViewer>
     <ScrollViewer x:Name="ProfilesPanel" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
      <StackPanel>
       <TextBlock Text="A setup for every session." FontSize="30" FontWeight="SemiBold"/>
       <TextBlock Text="These profiles control your CowClient modules. Your worlds stay in one 1.21.11 instance." TextWrapping="Wrap" Foreground="{StaticResource Muted}" Margin="0,13,0,28"/>
-      <Border Background="#20271D" CornerRadius="18" Padding="24" Margin="0,0,0,16"><Grid><StackPanel><TextBlock Text="Default" FontSize="23" FontWeight="SemiBold"/><TextBlock Text="FPS, CPS, keystrokes, ping and smooth zoom." Foreground="{StaticResource Muted}" Margin="0,10,135,0" TextWrapping="Wrap"/></StackPanel><Button Content="Use Default" Tag="Default" Click="Profile_Click" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid></Border>
-      <Border Background="#20271D" CornerRadius="18" Padding="24" Margin="0,0,0,16"><Grid><StackPanel><TextBlock Text="Competitive" FontSize="23" FontWeight="SemiBold"/><TextBlock Text="Add armor, speed and a steadier camera." Foreground="{StaticResource Muted}" Margin="0,10,165,0" TextWrapping="Wrap"/></StackPanel><Button Content="Use Competitive" Tag="Competitive" Click="Profile_Click" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid></Border>
-      <Border Background="#20271D" CornerRadius="18" Padding="24"><Grid><StackPanel><TextBlock Text="Chill" FontSize="23" FontWeight="SemiBold"/><TextBlock Text="Coordinates and clock, with less HUD clutter." Foreground="{StaticResource Muted}" Margin="0,10,145,0" TextWrapping="Wrap"/></StackPanel><Button Content="Use Chill" Tag="Chill" Click="Profile_Click" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid></Border>
+      <Border Background="#1C1926" CornerRadius="18" Padding="24" Margin="0,0,0,16"><Grid><StackPanel><TextBlock Text="Default" FontSize="23" FontWeight="SemiBold"/><TextBlock Text="FPS, CPS, keystrokes, ping and smooth zoom." Foreground="{StaticResource Muted}" Margin="0,10,135,0" TextWrapping="Wrap"/></StackPanel><Button Content="Use Default" Tag="Default" Click="Profile_Click" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid></Border>
+      <Border Background="#1C1926" CornerRadius="18" Padding="24" Margin="0,0,0,16"><Grid><StackPanel><TextBlock Text="Competitive" FontSize="23" FontWeight="SemiBold"/><TextBlock Text="Add armor, speed and a steadier camera." Foreground="{StaticResource Muted}" Margin="0,10,165,0" TextWrapping="Wrap"/></StackPanel><Button Content="Use Competitive" Tag="Competitive" Click="Profile_Click" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid></Border>
+      <Border Background="#1C1926" CornerRadius="18" Padding="24"><Grid><StackPanel><TextBlock Text="Chill" FontSize="23" FontWeight="SemiBold"/><TextBlock Text="Coordinates and clock, with less HUD clutter." Foreground="{StaticResource Muted}" Margin="0,10,145,0" TextWrapping="Wrap"/></StackPanel><Button Content="Use Chill" Tag="Chill" Click="Profile_Click" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid></Border>
       <TextBlock Text="Press Right Shift in-game to customize. Your changes are saved per profile." Margin="0,24,0,0" Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
      </StackPanel>
     </ScrollViewer>
     <ScrollViewer x:Name="SettingsPanel" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
      <StackPanel Margin="0,0,12,20">
       <TextBlock Text="Make it yours." FontSize="30" FontWeight="SemiBold" Margin="0,0,0,25"/>
-      <Border CornerRadius="18" Background="#20271D" Padding="24">
+      <Border CornerRadius="18" Background="#1C1926" Padding="24">
        <StackPanel>
         <TextBlock Text="Minecraft memory" FontSize="20" FontWeight="SemiBold"/>
-        <TextBlock x:Name="RamLabel" Text="4096 MB" Foreground="#C3ED91" Margin="0,12,0,0"/>
+        <TextBlock x:Name="RamLabel" Text="4096 MB" Foreground="#B397E7" Margin="0,12,0,0"/>
         <Slider x:Name="RamSlider" Minimum="2048" Maximum="8192" TickFrequency="512" IsSnapToTickEnabled="True" Value="4096" ValueChanged="Ram_Changed" Margin="0,12,0,16"/>
         <TextBlock Text="4 GB is a sensible starting point for a 16 GB PC." Foreground="{StaticResource Muted}" FontSize="12"/>
         <CheckBox x:Name="PerformanceCheck" Content="Install Sodium and Lithium for this instance"/>
-        <CheckBox x:Name="MinimizeCheck" Content="Minimize CowClient when Minecraft starts"/>
+        <CheckBox x:Name="MinimizeCheck" Content="Minimize CowClient when Minecraft starts"/><CheckBox x:Name="IntroCheck" Content="Show the short startup intro"/><CheckBox x:Name="ReducedMotionCheck" Content="Reduce intro and page animations"/>
        </StackPanel>
       </Border>
-      <Border CornerRadius="18" Background="#20271D" Padding="24" Margin="0,18,0,0">
+      <Border CornerRadius="18" Background="#1C1926" Padding="24" Margin="0,18,0,0">
        <StackPanel>
         <TextBlock Text="Microsoft application setup" FontSize="20" FontWeight="SemiBold"/>
         <TextBlock Text="CowClient needs its own registered public-client application ID. This is not your password or a client secret." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,12,0,15"/>
@@ -98,7 +97,7 @@
        </StackPanel>
       </Border>
       <StackPanel Orientation="Horizontal" Margin="0,22,0,0">
-       <Button Content="Save settings" Background="#C3ED91" Foreground="#172114" Click="Save_Click"/>
+       <Button Content="Save settings" Background="#B397E7" Foreground="#21172F" Click="Save_Click"/>
        <Button Content="Sign out" Margin="12,0,0,0" Click="Logout_Click"/>
       </StackPanel>
      </StackPanel>
@@ -106,21 +105,28 @@
    </Grid>
    <Grid Grid.Row="2" Margin="36,15,36,15">
     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="110"/></Grid.ColumnDefinitions>
-    <StackPanel><TextBlock x:Name="StatusText" Text="An owned copy of Minecraft Java is required." TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource Muted}" MaxHeight="44"/><ProgressBar x:Name="Progress" Height="3" Margin="0,10,16,0" Maximum="1" Foreground="#C3ED91" Background="#283121" Visibility="Collapsed"/></StackPanel>
-    <StackPanel Grid.Column="1"><TextBlock Text="0.1.0-alpha" FontSize="12" Foreground="{StaticResource Muted}" HorizontalAlignment="Right"/><Button x:Name="CancelButton" Content="Cancel" Visibility="Collapsed" Margin="0,7,0,0" Padding="10,6" FontSize="12" Click="Cancel_Click"/></StackPanel>
+    <StackPanel><TextBlock x:Name="StatusText" Text="An owned copy of Minecraft Java is required." TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource Muted}" MaxHeight="44"/><ProgressBar x:Name="Progress" Height="3" Margin="0,10,16,0" Maximum="1" Foreground="#B397E7" Background="#283121" Visibility="Collapsed"/></StackPanel>
+    <StackPanel Grid.Column="1"><TextBlock Text="0.1.1 / ALPHA" FontSize="12" Foreground="{StaticResource Muted}" HorizontalAlignment="Right"/><Button x:Name="CancelButton" Content="Cancel" Visibility="Collapsed" Margin="0,7,0,0" Padding="10,6" FontSize="12" Click="Cancel_Click"/></StackPanel>
    </Grid>
   </Grid>
-  <Border x:Name="LoginOverlay" Grid.ColumnSpan="2" Background="#D9101310" Visibility="Collapsed">
-   <Border Width="510" Background="#20271D" CornerRadius="22" Padding="32" HorizontalAlignment="Center" VerticalAlignment="Center">
-    <StackPanel>
-     <TextBlock Text="Sign in with Microsoft" FontSize="27" FontWeight="SemiBold"/>
-     <TextBlock Text="Open Microsoft's website and enter this code. Only continue if this launcher started the sign-in." TextWrapping="Wrap" Foreground="{StaticResource Muted}" Margin="0,16,0,22"/>
-     <TextBox x:Name="DeviceCodeBox" IsReadOnly="True" FontSize="32" FontWeight="SemiBold" TextAlignment="Center"/>
-     <Button Content="Open Microsoft sign-in" Click="Browser_Click" Background="#C3ED91" Foreground="#172114" Margin="0,23,0,0"/>
-     <Button Content="Cancel sign-in" Click="Cancel_Click" Background="Transparent" Margin="0,10,0,0"/>
-    </StackPanel>
-   </Border>
-  </Border>
+  <Border x:Name="IntroOverlay" Grid.ColumnSpan="2" Background="#121018" CornerRadius="18" Visibility="Collapsed" Panel.ZIndex="20"><Grid>
+<Ellipse Width="460" Height="460" Stroke="#31253F" StrokeThickness="1"/><Ellipse Width="350" Height="350" Stroke="#483159" StrokeThickness="1"/>
+<StackPanel x:Name="IntroContent" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5"><StackPanel.RenderTransform><ScaleTransform/></StackPanel.RenderTransform><Image Source="Assets/cow.png" Width="190" Height="140" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock Text="cowclient" FontFamily="{StaticResource DisplayFont}" FontSize="52" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,16,0,6"/><TextBlock Text="MAKE YOUR NEXT SESSION YOURS." Foreground="#BBA3D4" FontSize="11" HorizontalAlignment="Center"/><Border Width="44" Height="3" Background="#A477F0" CornerRadius="2" Margin="0,28,0,0"/></StackPanel>
+<Button Content="Enter CowClient  →" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,58" Click="SkipIntro_Click" Background="Transparent" BorderBrush="#3E314D"/><TextBlock Text="Minecraft Java Edition" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,26" FontSize="10" Foreground="#746781"/>
+</Grid></Border>
+<Border x:Name="LoginOverlay" Grid.ColumnSpan="2" Background="#EA0C0B11" Visibility="Collapsed" CornerRadius="18" Panel.ZIndex="30">
+<Border Width="530" Style="{StaticResource Card}" Padding="30" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#1C1825" BorderBrush="#534168"><StackPanel>
+<Grid><TextBlock Text="CONNECT YOUR ACCOUNT" FontSize="10" Foreground="#C7A5F4" FontWeight="SemiBold" VerticalAlignment="Center"/><Button Content="×" Click="Cancel_Click" HorizontalAlignment="Right" Padding="8,3" Background="Transparent" BorderBrush="Transparent"/></Grid>
+<TextBlock x:Name="AuthHeading" Text="Let's get you signed in." FontFamily="{StaticResource DisplayFont}" FontSize="29" FontWeight="SemiBold" Margin="0,15,0,12"/>
+<TextBlock x:Name="AuthDescription" Text="Use this one-time code on Microsoft's website. Your password stays with Microsoft." TextWrapping="Wrap" Foreground="{StaticResource Muted}" LineHeight="21"/>
+<Border x:Name="CodePanel" CornerRadius="14" Background="#120F1B" BorderBrush="#5D4877" BorderThickness="1" Padding="18" Margin="0,20,0,0"><StackPanel><TextBlock Text="YOUR MICROSOFT SIGN-IN CODE" FontSize="9" Foreground="#B498D2" HorizontalAlignment="Center"/><TextBox x:Name="DeviceCodeBox" Text="Getting code…" IsReadOnly="True" FontFamily="Consolas" FontSize="32" FontWeight="SemiBold" TextAlignment="Center" Background="Transparent" BorderThickness="0" Padding="0,12,0,8"/><TextBlock x:Name="CodeExpiry" Text="Waiting for Microsoft" FontSize="11" HorizontalAlignment="Center" Foreground="{StaticResource Muted}"/></StackPanel></Border>
+<StackPanel x:Name="AuthSteps" Margin="0,20,0,0"><TextBlock Text="1   Copy your code and open Microsoft." FontSize="12" Margin="0,0,0,10"/><TextBlock Text="2   Enter it and review the app permissions." FontSize="12" Margin="0,0,0,10"/><TextBlock Text="3   Come back here. CowClient connects automatically." FontSize="12"/></StackPanel>
+<TextBlock x:Name="AuthFeedback" Text="" Foreground="#CFB6EF" FontSize="12" TextWrapping="Wrap" Margin="0,15,0,0"/>
+<Button x:Name="OpenMicrosoftButton" Content="Copy code &amp; open Microsoft  ↗" Style="{StaticResource Primary}" Click="Browser_Click" IsEnabled="False" Margin="0,15,0,0" Padding="18,14"/>
+<Button x:Name="RetryLoginButton" Content="Get a new code" Click="Login_Click" Visibility="Collapsed" Margin="0,10,0,0"/>
+<Button x:Name="AuthSetupButton" Content="Application setup" Click="AuthSetup_Click" Visibility="Collapsed" Margin="0,10,0,0"/>
+<Button x:Name="CopyCodeButton" Content="Copy code only" Click="CopyCode_Click" IsEnabled="False" Background="Transparent" BorderBrush="Transparent" Margin="0,6,0,0"/>
+</StackPanel></Border></Border>
  </Grid>
  </Border>
 </Window>

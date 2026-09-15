@@ -3,6 +3,20 @@ using CowClient.Launcher;
 using System.Security.Cryptography;
 
 public class LauncherTests {
+ [Theory]
+ [InlineData("https://microsoft.com/devicelogin",true)]
+ [InlineData("https://www.microsoft.com/link",true)]
+ [InlineData("https://login.microsoftonline.com/common/oauth2/deviceauth",true)]
+ [InlineData("http://microsoft.com/devicelogin",false)]
+ [InlineData("https://microsoft.com.evil.example/login",false)]
+ [InlineData("https://microsoft.com@evil.example/login",false)]
+ [InlineData("https://user@microsoft.com/link",false)]
+ [InlineData("https://microsoft.com:8443/link",false)]
+ [InlineData("file:///login",false)]
+ public void OnlyOfficialHttpsVerificationAddressesAreAccepted(string url,bool expected) {
+  Assert.Equal(expected,MicrosoftLogin.IsOfficialVerificationUri(url));
+ }
+
  [Fact] public void RamAndProfilesAreBounded() {
   var s=new Settings{MemoryMb=int.MaxValue,Profile="../escape"};s.Validate();
   Assert.Equal(8192,s.MemoryMb);Assert.Equal("Default",s.Profile);

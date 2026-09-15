@@ -9,7 +9,7 @@ using CmlLib.Core.Auth;
 
 namespace CowClient.Launcher;
 
-public sealed record DevicePrompt(string Code,string Website);
+public sealed record DevicePrompt(string Code,string Website,DateTime ExpiresAt);
 public sealed class MicrosoftLogin : IDisposable {
     private readonly HttpClient http=new(){Timeout=TimeSpan.FromSeconds(45)};
     private readonly string tokenPath=Path.Combine(SettingsStore.Root,"account.dpapi");
@@ -36,17 +36,20 @@ public sealed class MicrosoftLogin : IDisposable {
         if(oauth==null) {
             var device=await Form("devicecode",new(){["client_id"]=clientId,["scope"]=Scope},ct);
             if(device["error"]!=null)throw new InvalidOperationException("Microsoft rejected this application configuration ("+Str(device,"error")+").");
-            prompt(new DevicePrompt(Str(device,"user_code"),"https://www.microsoft.com/link"));
+            string website=Str(device,"verification_uri");
+            if(!IsOfficialVerificationUri(website))throw new InvalidOperationException("Microsoft returned an unexpected verification address.");
             int seconds=device["expires_in"]?.GetValue<int>()??900;
-            int interval=Math.Clamp(device["interval"]?.GetValue<int>()??5,5,30);
+            int interval=Math.Max(device["interval"]?.GetValue<int>()??5,5);
             DateTime deadline=DateTime.UtcNow.AddSeconds(seconds);
+            prompt(new DevicePrompt(Str(device,"user_code"),website,deadline));
             while(DateTime.UtcNow<deadline) {
                 await Task.Delay(TimeSpan.FromSeconds(interval),ct);
+                if(DateTime.UtcNow>=deadline)break;
                 var result=await Form("token",new(){["client_id"]=clientId,["grant_type"]="urn:ietf:params:oauth:grant-type:device_code",["device_code"]=Str(device,"device_code")},ct);
                 if(result["access_token"]!=null){oauth=result;break;}
                 string error=result["error"]?.GetValue<string>()??"unknown_error";
                 if(error=="authorization_pending")continue;
-                if(error=="slow_down"){interval=Math.Min(interval+5,60);continue;}
+                if(error=="slow_down"){interval=checked(interval+5);continue;}
                 throw new InvalidOperationException("Microsoft sign-in stopped ("+error+").");
             }
             if(oauth==null)throw new InvalidOperationException("The sign-in code expired. Try again.");
@@ -96,6 +99,11 @@ public sealed class MicrosoftLogin : IDisposable {
         using var response=await http.SendAsync(request,ct);
         if(!response.IsSuccessStatusCode)throw new InvalidOperationException("Minecraft account check failed (HTTP "+(int)response.StatusCode+"). Verify Java ownership and the application registration.");
         return JsonNode.Parse(await response.Content.ReadAsStringAsync(ct))??throw new InvalidOperationException("Invalid Minecraft response.");
+    }
+    public static bool IsOfficialVerificationUri(string value) {
+        return Uri.TryCreate(value,UriKind.Absolute,out var uri) && uri.Scheme==Uri.UriSchemeHttps
+            && uri.IsDefaultPort && string.IsNullOrEmpty(uri.UserInfo)
+            && new[]{"microsoft.com","www.microsoft.com","login.microsoftonline.com","login.live.com","aka.ms"}.Contains(uri.IdnHost,StringComparer.OrdinalIgnoreCase);
     }
     public void Dispose()=>http.Dispose();
 }

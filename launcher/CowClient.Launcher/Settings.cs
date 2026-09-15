@@ -8,6 +8,8 @@ public sealed class Settings {
     public int MemoryMb {get;set;}=4096;
     public bool PerformanceMods {get;set;}=true;
     public bool MinimizeOnLaunch {get;set;}=true;
+    public bool ShowIntro {get;set;}=true;
+    public bool ReducedMotion {get;set;}=false;
     public void Validate() {
         MemoryMb=Math.Clamp(MemoryMb,2048,8192);
         if(!new[]{"Default","Competitive","Chill"}.Contains(Profile)) Profile="Default";

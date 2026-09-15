@@ -8,7 +8,7 @@
     <AssemblyName>CowClient</AssemblyName>
     <RootNamespace>CowClient.Launcher</RootNamespace>
     <ApplicationIcon>../../branding/cow.ico</ApplicationIcon>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
   <ItemGroup>

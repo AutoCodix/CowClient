@@ -1,35 +1,40 @@
-<Application x:Class="CowClient.Launcher.App"
- xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
- xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
- <Application.Resources>
-  <SolidColorBrush x:Key="Ink" Color="#EFEFDF"/>
-  <SolidColorBrush x:Key="Muted" Color="#959F8C"/>
-  <Style TargetType="TextBlock"><Setter Property="FontFamily" Value="Segoe UI"/><Setter Property="FontSize" Value="14"/></Style>
-  <Style TargetType="Button">
-   <Setter Property="Foreground" Value="#EFEFDF"/><Setter Property="Background" Value="#252E20"/>
-   <Setter Property="BorderBrush" Value="#3B4733"/><Setter Property="BorderThickness" Value="0"/>
-   <Setter Property="Padding" Value="18,12"/><Setter Property="FontFamily" Value="Segoe UI"/>
-   <Setter Property="FontSize" Value="14"/><Setter Property="FontWeight" Value="SemiBold"/>
-   <Setter Property="Cursor" Value="Hand"/><Setter Property="HorizontalContentAlignment" Value="Center"/>
-   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
-    <Border x:Name="Plate" CornerRadius="12" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
-     <ContentPresenter x:Name="Label" Margin="{TemplateBinding Padding}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/>
-    </Border>
-    <ControlTemplate.Triggers>
-     <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Plate" Property="BorderThickness" Value="1"/><Setter TargetName="Plate" Property="BorderBrush" Value="#B4D890"/></Trigger>
-     <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Plate" Property="BorderThickness" Value="2"/><Setter TargetName="Plate" Property="BorderBrush" Value="#C3ED91"/></Trigger>
-     <Trigger Property="IsPressed" Value="True"><Setter TargetName="Label" Property="Opacity" Value="0.65"/></Trigger>
-     <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Plate" Property="Opacity" Value="0.45"/></Trigger>
-    </ControlTemplate.Triggers>
-   </ControlTemplate></Setter.Value></Setter>
-  </Style>
-  <Style TargetType="TextBox">
-   <Setter Property="Background" Value="#252E20"/><Setter Property="Foreground" Value="#EFEFDF"/>
-   <Setter Property="CaretBrush" Value="#C3ED91"/><Setter Property="SelectionBrush" Value="#547540"/>
-   <Setter Property="Padding" Value="12"/><Setter Property="BorderThickness" Value="1"/><Setter Property="BorderBrush" Value="#414D38"/>
-   <Setter Property="FontSize" Value="14"/>
-  </Style>
-  <Style TargetType="CheckBox"><Setter Property="Foreground" Value="#EFEFDF"/><Setter Property="Margin" Value="0,12,0,0"/><Setter Property="FontSize" Value="14"/></Style>
-  <Style TargetType="ComboBox"><Setter Property="FontSize" Value="14"/><Setter Property="Padding" Value="10"/></Style>
- </Application.Resources>
+<Application x:Class="CowClient.Launcher.App" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<Application.Resources>
+<FontFamily x:Key="BodyFont">Segoe UI Variable Text, Segoe UI</FontFamily>
+<FontFamily x:Key="DisplayFont">Segoe UI Variable Display, Segoe UI</FontFamily>
+<SolidColorBrush x:Key="Ink" Color="#F4F3FA"/><SolidColorBrush x:Key="Muted" Color="#A7A4B7"/>
+<Style TargetType="Button">
+<Setter Property="Foreground" Value="#F4F3FA"/><Setter Property="Background" Value="#25232E"/><Setter Property="BorderBrush" Value="#3A3649"/><Setter Property="BorderThickness" Value="1"/>
+<Setter Property="Padding" Value="18,12"/><Setter Property="FontFamily" Value="{StaticResource BodyFont}"/><Setter Property="FontSize" Value="14"/><Setter Property="FontWeight" Value="SemiBold"/>
+<Setter Property="Cursor" Value="Hand"/><Setter Property="HorizontalContentAlignment" Value="Center"/>
+<Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+<Grid x:Name="Surface" RenderTransformOrigin="0.5,0.5">
+<Border CornerRadius="12" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"/>
+<Border x:Name="Hover" CornerRadius="12" Background="White" Opacity="0" IsHitTestVisible="False"/>
+<Border x:Name="Focus" CornerRadius="12" BorderBrush="#D4C4FF" BorderThickness="2" Opacity="0" IsHitTestVisible="False"/>
+<ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+</Grid>
+<ControlTemplate.Triggers>
+<Trigger Property="IsMouseOver" Value="True">
+<Trigger.EnterActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0.09" Duration="0:0:0.14"/></Storyboard></BeginStoryboard></Trigger.EnterActions>
+<Trigger.ExitActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.2"/></Storyboard></BeginStoryboard></Trigger.ExitActions>
+</Trigger>
+<Trigger Property="IsPressed" Value="True"><Setter TargetName="Surface" Property="RenderTransform"><Setter.Value><ScaleTransform ScaleX="0.98" ScaleY="0.98"/></Setter.Value></Setter></Trigger>
+<Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Focus" Property="Opacity" Value="1"/></Trigger>
+<Trigger Property="IsEnabled" Value="False"><Setter TargetName="Surface" Property="Opacity" Value="0.45"/></Trigger>
+</ControlTemplate.Triggers>
+</ControlTemplate></Setter.Value></Setter>
+</Style>
+<Style x:Key="Primary" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+<Setter Property="Background"><Setter.Value><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#9666F1" Offset="0"/><GradientStop Color="#7148D7" Offset="1"/></LinearGradientBrush></Setter.Value></Setter>
+<Setter Property="BorderBrush" Value="#B18BFA"/>
+</Style>
+<Style x:Key="Card" TargetType="Border"><Setter Property="Background" Value="#191821"/><Setter Property="BorderBrush" Value="#302C3D"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="16"/><Setter Property="Padding" Value="20"/></Style>
+<Style TargetType="TextBox">
+<Setter Property="Background" Value="#121119"/><Setter Property="Foreground" Value="#F4F3FA"/><Setter Property="CaretBrush" Value="#B394FF"/><Setter Property="SelectionBrush" Value="#7151A8"/>
+<Setter Property="Padding" Value="12"/><Setter Property="BorderThickness" Value="1"/><Setter Property="BorderBrush" Value="#49415D"/><Setter Property="FontSize" Value="14"/>
+<Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TextBox"><Border CornerRadius="10" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"><ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/></Border></ControlTemplate></Setter.Value></Setter>
+</Style>
+<Style TargetType="CheckBox"><Setter Property="Foreground" Value="#E9E6F4"/><Setter Property="Margin" Value="0,12,0,0"/><Setter Property="FontSize" Value="14"/></Style>
+</Application.Resources>
 </Application>
