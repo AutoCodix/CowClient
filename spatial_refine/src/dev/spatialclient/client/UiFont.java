@@ -70,7 +70,7 @@ public final class UiFont {
             int row = idx / 16;
             int sw = Math.min(CELL_W, widths[idx] + 8);
             if (ch != ' ') {
-                g.blit(texture, cursorX, cursorY, sw, CELL_H, col * CELL_W, row * CELL_H, sw, CELL_H, ATLAS_W, ATLAS_H);
+                g.blit(texture, cursorX, cursorY, 0, col * CELL_W, row * CELL_H, sw, CELL_H, ATLAS_W, ATLAS_H);
             }
             cursorX += widths[idx] + 1;
         }
