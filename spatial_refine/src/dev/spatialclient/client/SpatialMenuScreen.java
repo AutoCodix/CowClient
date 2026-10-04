@@ -50,8 +50,8 @@ public final class SpatialMenuScreen extends Screen {
         SpatialConfig cfg = SpatialConfig.get();
         int accent = 0xFF000000 | cfg.accentRgb;
         int radius = cfg.menuRadius;
-        int panelAlpha = Math.round(cfg.menuOpacity / 100.0F * 245.0F);
-        int sideAlpha = Math.round(cfg.menuOpacity / 100.0F * 250.0F);
+        int panelAlpha = Math.round(cfg.menuOpacity / 100.0F * 218.0F);
+        int sideAlpha = Math.round(cfg.menuOpacity / 100.0F * 228.0F);
         UiRenderer.shadow(g, panelX, panelY, panelW, panelH, radius);
         UiRenderer.roundedRect(g, panelX, panelY, panelW, panelH, radius, (panelAlpha << 24) | 0x0D0F23);
 
@@ -345,11 +345,15 @@ public final class SpatialMenuScreen extends Screen {
 
     private void layout() {
         float scale = SpatialConfig.get().menuScale;
-        panelW = Math.min(width - 28, Math.round(Math.min(700, Math.max(520, width - 56)) * scale));
-        panelH = Math.min(height - 24, Math.round(Math.min(422, Math.max(350, height - 50)) * scale));
-        sidebarW = Math.min(154, Math.max(132, panelW / 5));
-        panelX = Math.max(18, (width - panelW) / 2 - Math.min(66, width / 16));
-        panelY = Math.max(16, (height - panelH) / 2);
+        int baseW = Math.min(620, Math.max(470, width / 2));
+        int baseH = Math.min(380, Math.max(315, height - 150));
+        panelW = Math.min(width - 32, Math.round(baseW * scale));
+        panelH = Math.min(height - 56, Math.round(baseH * scale));
+        sidebarW = Math.min(136, Math.max(116, panelW / 5));
+        int playerSide = width / 2;
+        int preferredX = playerSide + Math.max(42, width / 18);
+        panelX = Math.min(width - panelW - 18, Math.max(18, preferredX));
+        panelY = Math.min(height - panelH - 22, Math.max(38, (height - panelH) / 2 + Math.max(34, height / 16)));
     }
 
     private List<Row> visibleRows() {
@@ -456,8 +460,8 @@ public final class SpatialMenuScreen extends Screen {
             }
             case SETTINGS -> {
                 rows.add(cycle("Accent Color", "Master accent used by GUI, HUD, aura and halo when linked.", () -> accentName(c.accentRgb), () -> c.accentRgb = nextAccent(c.accentRgb)));
-                rows.add(cycle("Menu Opacity", "Overall transparency of the rounded menu surface.", () -> c.menuOpacity + "%", () -> c.menuOpacity = nextInt(c.menuOpacity, 70, 100, 5)));
-                rows.add(cycle("Menu Scale", "Resize the complete Prestige-style client panel.", () -> scaleLabel(c.menuScale), () -> c.menuScale = nextFloat(c.menuScale, .85F, 1.15F, .05F)));
+                rows.add(cycle("Menu Opacity", "Overall transparency of the compact floating menu surface.", () -> c.menuOpacity + "%", () -> c.menuOpacity = nextInt(c.menuOpacity, 45, 95, 5)));
+                rows.add(cycle("Menu Scale", "Resize the compact floating panel without stretching it across the screen.", () -> scaleLabel(c.menuScale), () -> c.menuScale = nextFloat(c.menuScale, .72F, 1.00F, .04F)));
                 rows.add(cycle("Corner Radius", "Roundness of the main menu shell.", () -> c.menuRadius + "px", () -> c.menuRadius = nextInt(c.menuRadius, 8, 20, 2)));
                 rows.add(cycle("Reset Everything", "Restore every Spatial visual, HUD, cosmetic and camera preference.", () -> "RESET", SpatialMenuScreen::resetVisuals));
             }
@@ -531,7 +535,7 @@ public final class SpatialMenuScreen extends Screen {
         c.halo = true; c.haloStyle = SpatialConfig.HaloStyle.CLEAN_RING; c.haloSpeed = .8F; c.haloRadius = .43F; c.haloHeight = 2.02F; c.haloWidth = .04F; c.haloTilt = 11; c.haloOpacity = .72F; c.haloUseAccent = true; c.haloColorRgb = 0x7700FF;
         c.headFollow = true; c.headFollowYaw = 28; c.headFollowPitch = 16; c.headFollowSpeed = .18F; c.bodyFacesCamera = true;
         c.menuParallax = true; c.parallaxStrength = .09F; c.cameraCollision = true; c.collisionPadding = .20F; c.cameraSmoothness = .18F; c.tabOrbitStrength = 1; c.tabVerticalStrength = 1; c.tabTransitionSpeed = 1;
-        c.accentRgb = 0x7700FF; c.menuOpacity = 95; c.menuScale = 1; c.menuRadius = 15;
+        c.accentRgb = 0x7700FF; c.menuOpacity = 72; c.menuScale = .86F; c.menuRadius = 15;
     }
 
     private static int nextAccent(int rgb) {
