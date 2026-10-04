@@ -17,6 +17,8 @@ public final class HeadTracking {
     private static float oldHeadO;
     private static float oldPitch;
     private static float oldPitchO;
+    private static float oldBody;
+    private static float oldBodyO;
 
     private HeadTracking() {}
 
@@ -24,15 +26,19 @@ public final class HeadTracking {
         if (width <= 0 || height <= 0) return;
         mouseXNorm = Mth.clamp((float)((mouseX / width) * 2.0 - 1.0), -1.0F, 1.0F);
         mouseYNorm = Mth.clamp((float)((mouseY / height) * 2.0 - 1.0), -1.0F, 1.0F);
-        smoothYawOffset = Mth.lerp(0.18F, smoothYawOffset, -mouseXNorm * 28.0F);
-        smoothPitch = Mth.lerp(0.18F, smoothPitch, Mth.clamp(mouseYNorm * 16.0F, -16.0F, 16.0F));
+        SpatialConfig cfg = SpatialConfig.get();
+        smoothYawOffset = Mth.lerp(cfg.headFollowSpeed, smoothYawOffset, -mouseXNorm * cfg.headFollowYaw);
+        smoothPitch = Mth.lerp(cfg.headFollowSpeed, smoothPitch,
+                Mth.clamp(mouseYNorm * cfg.headFollowPitch, -cfg.headFollowPitch, cfg.headFollowPitch));
     }
 
     public static void onPlayerPre(RenderPlayerEvent.Pre event) {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null || event.getEntity() != player || !SpatialCamera.isMenuCameraActive()) return;
-        if (!SpatialConfig.get().headFollow) return;
+
+        SpatialConfig cfg = SpatialConfig.get();
+        if (!cfg.headFollow && !cfg.bodyFacesCamera) return;
 
         restore();
         saved = true;
@@ -40,12 +46,22 @@ public final class HeadTracking {
         oldHeadO = player.yHeadRotO;
         oldPitch = player.getXRot();
         oldPitchO = player.xRotO;
+        oldBody = player.yBodyRot;
+        oldBodyO = player.yBodyRotO;
 
-        float head = player.yBodyRot + smoothYawOffset;
-        player.yHeadRot = head;
-        player.yHeadRotO = head;
-        player.setXRot(smoothPitch);
-        player.xRotO = smoothPitch;
+        float body = cfg.bodyFacesCamera ? SpatialCamera.presentationBodyYaw() : player.yBodyRot;
+        if (cfg.bodyFacesCamera) {
+            player.yBodyRot = body;
+            player.yBodyRotO = body;
+        }
+
+        if (cfg.headFollow) {
+            float head = body + smoothYawOffset;
+            player.yHeadRot = head;
+            player.yHeadRotO = head;
+            player.setXRot(smoothPitch);
+            player.xRotO = smoothPitch;
+        }
     }
 
     public static void onPlayerPost(RenderPlayerEvent.Post event) {
@@ -64,6 +80,8 @@ public final class HeadTracking {
             player.yHeadRotO = oldHeadO;
             player.setXRot(oldPitch);
             player.xRotO = oldPitchO;
+            player.yBodyRot = oldBody;
+            player.yBodyRotO = oldBodyO;
         }
         saved = false;
     }
