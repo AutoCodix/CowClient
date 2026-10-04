@@ -29,6 +29,7 @@ public final class UiRenderer {
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
+        RenderSystem.disableCull();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
         BufferBuilder buf = Tesselator.getInstance().getBuilder();
@@ -44,6 +45,7 @@ public final class UiRenderer {
         buf.vertex(matrix, x + radius + (float)Math.cos(rad) * radius, y + radius + (float)Math.sin(rad) * radius, 0.0F)
                 .color(r, gr, b, a).endVertex();
         BufferUploader.drawWithShader(buf.end());
+        RenderSystem.enableCull();
     }
 
     private static void arc(BufferBuilder buf, Matrix4f matrix, float cx, float cy, float radius,
