@@ -108,8 +108,8 @@ public final class SpatialConfig {
     public float tabTransitionSpeed = 1.0F;
 
     public int accentRgb = 0x7700FF;
-    public int menuOpacity = 95;
-    public float menuScale = 1.0F;
+    public int menuOpacity = 72;
+    public float menuScale = 0.86F;
     public int menuRadius = 15;
 
     private SpatialConfig() {}
@@ -201,8 +201,8 @@ public final class SpatialConfig {
         tabTransitionSpeed = clamp(tabTransitionSpeed, 0.55F, 1.80F);
 
         accentRgb &= 0xFFFFFF;
-        menuOpacity = clamp(menuOpacity, 70, 100);
-        menuScale = clamp(menuScale, 0.85F, 1.15F);
+        menuOpacity = clamp(menuOpacity, 45, 95);
+        menuScale = clamp(menuScale, 0.72F, 1.00F);
         menuRadius = clamp(menuRadius, 8, 20);
     }
 
