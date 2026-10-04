@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.spatial.client.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "spatialclient.refmap.json",
+  "client": [
+    "CameraMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
