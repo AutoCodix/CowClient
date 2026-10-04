@@ -25,12 +25,12 @@ jobs:
         with:
           gradle-version: '8.8'
 
-      - name: Extract Spatial Client
+      - name: Prepare refined Spatial Client
         run: |
           rm -rf SpatialClientProject
           mkdir SpatialClientProject
           tar -xzf SpatialClientProject.tar.gz -C SpatialClientProject --strip-components=1
-          tar -xzf spatial_refine/patch.tar.gz -C SpatialClientProject
+          cp spatial_refine/src/dev/spatialclient/client/*.java SpatialClientProject/src/main/java/dev/spatialclient/client/
           mkdir -p SpatialClientProject/src/main/resources/assets/spatialclient/textures/gui
           cp spatial_refine/ui_font_regular.png SpatialClientProject/src/main/resources/assets/spatialclient/textures/gui/ui_font_regular.png
           cp spatial_refine/ui_font_semibold.png SpatialClientProject/src/main/resources/assets/spatialclient/textures/gui/ui_font_semibold.png
@@ -42,12 +42,15 @@ jobs:
       - name: Verify output
         working-directory: SpatialClientProject
         run: |
-          test -n "$(find build/libs -maxdepth 1 -type f -name '*.jar' -print -quit)"
-          jar tf "$(find build/libs -maxdepth 1 -type f -name '*.jar' -print -quit)" | grep -q 'dev/spatialclient/client/SpatialMenuScreen.class'
-          jar tf "$(find build/libs -maxdepth 1 -type f -name '*.jar' -print -quit)" | grep -q 'dev/spatialclient/client/UiFont.class'
-          jar tf "$(find build/libs -maxdepth 1 -type f -name '*.jar' -print -quit)" | grep -q 'assets/spatialclient/textures/gui/ui_font_regular.png'
-          jar tf "$(find build/libs -maxdepth 1 -type f -name '*.jar' -print -quit)" | grep -q 'assets/spatialclient/textures/gui/ui_font_semibold.png'
-          find build/libs -maxdepth 1 -type f -name '*.jar' -print
+          JAR="$(find build/libs -maxdepth 1 -type f -name '*.jar' -print -quit)"
+          test -n "$JAR"
+          jar tf "$JAR" | grep -q 'dev/spatialclient/client/SpatialMenuScreen.class'
+          jar tf "$JAR" | grep -q 'dev/spatialclient/client/UiFont.class'
+          jar tf "$JAR" | grep -q 'dev/spatialclient/client/UiRenderer.class'
+          jar tf "$JAR" | grep -q 'dev/spatialclient/client/AuraRenderer.class'
+          jar tf "$JAR" | grep -q 'assets/spatialclient/textures/gui/ui_font_regular.png'
+          jar tf "$JAR" | grep -q 'assets/spatialclient/textures/gui/ui_font_semibold.png'
+          echo "$JAR"
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
