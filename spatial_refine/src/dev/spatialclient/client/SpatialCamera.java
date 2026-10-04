@@ -133,7 +133,7 @@ public final class SpatialCamera {
             targetPitch = Mth.lerp(partial, player.xRotO, player.getXRot());
         } else {
             float bodyYaw = Mth.rotLerp(partial, player.yBodyRotO, player.yBodyRot);
-            float tabRate = (8.0F + cfg.cameraSmoothness * 16.0F) * cfg.tabTransitionSpeed;
+            float tabRate = (12.0F + cfg.cameraSmoothness * 20.0F) * cfg.tabTransitionSpeed;
             float orbitAlpha = 1.0F - (float)Math.exp(-tabRate * dt);
             currentOrbitDeg = rotLerp(currentOrbitDeg, targetOrbit(section), orbitAlpha);
             currentHeight = Mth.lerp(orbitAlpha, currentHeight, targetHeight(section));
@@ -201,8 +201,9 @@ public final class SpatialCamera {
 
         SpatialConfig cfg = SpatialConfig.get();
         if (cfg.menuParallax) {
-            rightAmount += mouseXNorm * cfg.parallaxStrength;
-            up += -mouseYNorm * cfg.parallaxStrength * 0.62;
+            rightAmount += mouseXNorm * cfg.parallaxStrength * 1.55;
+            forwardAmount += -mouseYNorm * cfg.parallaxStrength * 0.38;
+            up += -mouseYNorm * cfg.parallaxStrength * 1.05;
         }
 
         Vec3 eye = focus.add(forward.scale(forwardAmount)).add(right.scale(rightAmount)).add(0.0, up, 0.0);
