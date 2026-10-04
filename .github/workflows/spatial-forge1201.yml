@@ -1,0 +1,65 @@
+name: Spatial Client Forge 1.20.1
+
+on:
+  push:
+    branches: [spatial-client-forge1201]
+    paths:
+      - 'spatial-forge1201/**'
+      - '.github/workflows/spatial-forge1201.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.1.1'
+
+      - name: Build Spatial Client
+        working-directory: spatial-forge1201
+        run: gradle clean build --no-daemon --stacktrace
+
+      - name: Install headless graphics dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libxrandr2 libxinerama1 libxcursor1 libxi6 libasound2t64
+
+      - name: Boot Forge client and render Spatial UI
+        working-directory: spatial-forge1201
+        run: |
+          xvfb-run -a -s "-screen 0 1280x800x24" timeout 300s gradle runClient -PsmokeTest --no-daemon --stacktrace
+          grep -q SPATIALCLIENT_SMOKE_UI_OPEN run/logs/latest.log
+          grep -q SPATIALCLIENT_SMOKE_SCREENSHOT_OK run/logs/latest.log
+          grep -q SPATIALCLIENT_SMOKE_OK run/logs/latest.log
+          test -f run/spatialclient-smoke.png
+
+      - name: Upload tested mod
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpatialClient-Forge-1.20.1
+          path: |
+            spatial-forge1201/build/libs/*.jar
+            !spatial-forge1201/build/libs/*-sources.jar
+          if-no-files-found: error
+
+      - name: Upload smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpatialClient-smoke-evidence
+          path: |
+            spatial-forge1201/run/spatialclient-smoke.png
+            spatial-forge1201/run/logs/latest.log
+          if-no-files-found: warn
