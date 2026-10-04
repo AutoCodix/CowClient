@@ -13,6 +13,7 @@ public final class PlayerLookController {
     private static float oldPitch;
     private static float oldPitchO;
     private static AbstractClientPlayer changedPlayer;
+    private static int smokeRenderCount;
 
     private PlayerLookController() { }
 
@@ -35,12 +36,19 @@ public final class PlayerLookController {
         player.setXRot(pitch);
         player.xRotO = pitch;
         changedPlayer = player;
+        if (Boolean.getBoolean("spatialclient.smokeTest")) {
+            smokeRenderCount++;
+        }
     }
 
     @SubscribeEvent
     public static void onPost(RenderPlayerEvent.Post event) {
         if (changedPlayer == null || event.getEntity() != changedPlayer) return;
         restoreIfNeeded();
+    }
+
+    public static int smokeRenderCount() {
+        return smokeRenderCount;
     }
 
     public static void restoreIfNeeded() {
