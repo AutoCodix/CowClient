@@ -52,7 +52,7 @@ public final class HudRenderer {
         int y = 8;
         int accent = 0xFF000000 | cfg.accentColor;
         if (cfg.showFps) {
-            g.drawString(mc.font, "FPS " + Minecraft.getFps(), x, y, accent, true);
+            g.drawString(mc.font, "FPS " + mc.getFps(), x, y, accent, true);
             y += 12;
         }
         if (cfg.showPing && mc.getConnection() != null && mc.player != null) {
