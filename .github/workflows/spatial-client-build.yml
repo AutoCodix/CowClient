@@ -39,7 +39,7 @@ jobs:
 
       - name: Build
         working-directory: SpatialClientProject
-        run: gradle clean build --stacktrace --no-daemon
+        run: gradle clean build --stacktrace --no-daemon --console=plain
 
       - name: Verify output
         working-directory: SpatialClientProject
