@@ -17,8 +17,17 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.joml.Matrix4f;
 
+import java.util.EnumSet;
+
 public final class AuraRenderer {
+    private static final EnumSet<ClientConfig.AuraStyle> SMOKE_RENDERED =
+            EnumSet.noneOf(ClientConfig.AuraStyle.class);
+
     private AuraRenderer() { }
+
+    public static boolean smokeRendered(ClientConfig.AuraStyle style) {
+        return SMOKE_RENDERED.contains(style);
+    }
 
     @SubscribeEvent
     public static void onRenderWorld(RenderLevelStageEvent event) {
@@ -59,6 +68,10 @@ public final class AuraRenderer {
         float a = cfg.auraOpacity;
         float time = ((System.currentTimeMillis() % 100_000L) / 1000f + partialTick / 20f) * cfg.auraSpeed;
         Matrix4f matrix = pose.last().pose();
+
+        if (Boolean.getBoolean("spatialclient.smokeTest")) {
+            SMOKE_RENDERED.add(cfg.auraStyle);
+        }
 
         switch (cfg.auraStyle) {
             case HALO -> {
