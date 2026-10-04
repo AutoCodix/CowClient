@@ -30,6 +30,13 @@ jobs:
           rm -rf SpatialClientProject
           mkdir SpatialClientProject
           tar -xzf SpatialClientProject.tar.gz -C SpatialClientProject --strip-components=1
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("SpatialClientProject/src/main/java/dev/spatialclient/client/AuraRenderer.java")
+          s = p.read_text()
+          s = s.replace("time * (i % 2 == 0 ? 1.0 : -1.0)", "time * (i % 2 == 0 ? 1.0F : -1.0F)")
+          p.write_text(s)
+          PY
 
       - name: Build
         working-directory: SpatialClientProject
