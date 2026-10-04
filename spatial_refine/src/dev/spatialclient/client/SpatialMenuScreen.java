@@ -168,7 +168,7 @@ public final class SpatialMenuScreen extends Screen {
                 UiRenderer.roundedRect(g, right - pillW - 12, ry + 12, pillW, 23, 7, 0xFF1C2040);
                 UiFont.draw(g, value, right - pillW - 12 + (pillW - vw) * 0.5F, ry + 18,
                         0xFFCFC8F0, 0.235F, UiFont.Weight.SEMIBOLD);
-                drawChevron(g, right - pillW - 25, ry + 20, 0xFF7D839F);
+                drawChevron(g, Math.round(right - pillW - 25), ry + 20, 0xFF7D839F);
             }
         }
     }
