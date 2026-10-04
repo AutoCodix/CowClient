@@ -14,12 +14,16 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
 
 public final class SpatialCamera {
+    private static final double MENU_DISTANCE = 3.24;
+
     private static RemotePlayer cameraEntity;
     private static Entity previousCameraEntity;
     private static CameraType previousCameraType;
     private static Vec3 currentEye;
     private static float currentYaw;
     private static float currentPitch;
+    private static float currentOrbitDeg;
+    private static float currentHeight;
     private static boolean active;
     private static boolean closing;
     private static long lastNanos;
@@ -39,9 +43,13 @@ public final class SpatialCamera {
         cameraEntity = new RemotePlayer(mc.level, player.getGameProfile());
 
         float partial = mc.getFrameTime();
-        Vec3 playerEye = interpolatedEye(player, partial);
         float bodyYaw = Mth.rotLerp(partial, player.yBodyRotO, player.yBodyRot);
-        Target target = menuTarget(player, partial, bodyYaw, SpatialSection.VISUALS);
+        section = SpatialSection.VISUALS;
+        currentOrbitDeg = targetOrbit(section);
+        currentHeight = targetHeight(section);
+
+        Target target = menuTarget(player, partial, bodyYaw, currentOrbitDeg, currentHeight, section.lookOffset);
+        Vec3 playerEye = interpolatedEye(player, partial);
         currentEye = playerEye.lerp(target.eye, 0.72);
         float[] initialLook = lookAt(currentEye, target.lookAt);
         currentYaw = initialLook[0];
@@ -50,7 +58,6 @@ public final class SpatialCamera {
 
         active = true;
         closing = false;
-        section = SpatialSection.VISUALS;
         lastNanos = System.nanoTime();
         mc.options.setCameraType(CameraType.FIRST_PERSON);
         mc.setCameraEntity(cameraEntity);
@@ -93,6 +100,14 @@ public final class SpatialCamera {
         mouseYNorm = Mth.clamp((float)((mouseY / height) * 2.0 - 1.0), -1.0F, 1.0F);
     }
 
+    public static float presentationBodyYaw() {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer player = mc.player;
+        if (player == null || currentEye == null) return 0.0F;
+        Vec3 body = new Vec3(player.getX(), player.getY() + 1.0, player.getZ());
+        return lookAt(body, currentEye)[0];
+    }
+
     public static void onRenderTick(TickEvent.RenderTickEvent event) {
         if (event.phase != TickEvent.Phase.START || !active) return;
         Minecraft mc = Minecraft.getInstance();
@@ -106,9 +121,9 @@ public final class SpatialCamera {
         float dt = lastNanos == 0L ? 1.0F / 60.0F : Mth.clamp((now - lastNanos) / 1_000_000_000.0F, 0.001F, 0.033F);
         lastNanos = now;
         float partial = event.renderTickTime;
+        SpatialConfig cfg = SpatialConfig.get();
 
         Vec3 targetEye;
-        Vec3 targetLook;
         float targetYaw;
         float targetPitch;
 
@@ -116,32 +131,35 @@ public final class SpatialCamera {
             targetEye = interpolatedEye(player, partial);
             targetYaw = Mth.rotLerp(partial, player.yRotO, player.getYRot());
             targetPitch = Mth.lerp(partial, player.xRotO, player.getXRot());
-            targetLook = null;
         } else {
             float bodyYaw = Mth.rotLerp(partial, player.yBodyRotO, player.yBodyRot);
-            Target target = menuTarget(player, partial, bodyYaw, section);
-            targetEye = target.eye;
-            targetLook = target.lookAt;
+            float tabRate = (8.0F + cfg.cameraSmoothness * 16.0F) * cfg.tabTransitionSpeed;
+            float orbitAlpha = 1.0F - (float)Math.exp(-tabRate * dt);
+            currentOrbitDeg = rotLerp(currentOrbitDeg, targetOrbit(section), orbitAlpha);
+            currentHeight = Mth.lerp(orbitAlpha, currentHeight, targetHeight(section));
 
-            if (SpatialConfig.get().cameraCollision) {
+            Target target = menuTarget(player, partial, bodyYaw, currentOrbitDeg, currentHeight, section.lookOffset);
+            targetEye = target.eye;
+
+            if (cfg.cameraCollision) {
                 Vec3 focus = interpolatedBody(player, partial).add(0.0, 1.28, 0.0);
                 BlockHitResult hit = mc.level.clip(new ClipContext(focus, targetEye, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, player));
                 if (hit.getType() != HitResult.Type.MISS) {
                     Vec3 hitPos = hit.getLocation();
                     Vec3 towardFocus = focus.subtract(hitPos);
-                    if (towardFocus.lengthSqr() > 1.0E-6) hitPos = hitPos.add(towardFocus.normalize().scale(0.20));
+                    if (towardFocus.lengthSqr() > 1.0E-6) hitPos = hitPos.add(towardFocus.normalize().scale(cfg.collisionPadding));
                     targetEye = hitPos;
                 }
             }
 
-            float[] look = lookAt(targetEye, targetLook);
+            float[] look = lookAt(targetEye, target.lookAt);
             targetYaw = look[0];
             targetPitch = look[1];
         }
 
-        float baseRate = closing ? 22.0F : 10.5F + SpatialConfig.get().cameraSmoothness * 18.0F;
+        float baseRate = closing ? 22.0F : 12.0F + cfg.cameraSmoothness * 16.0F;
         float posAlpha = 1.0F - (float)Math.exp(-baseRate * dt);
-        float rotAlpha = 1.0F - (float)Math.exp(-(baseRate + 4.0F) * dt);
+        float rotAlpha = 1.0F - (float)Math.exp(-(baseRate + 5.0F) * dt);
 
         if (currentEye == null) currentEye = targetEye;
         currentEye = currentEye.lerp(targetEye, posAlpha);
@@ -157,22 +175,38 @@ public final class SpatialCamera {
         }
     }
 
-    private static Target menuTarget(LocalPlayer player, float partial, float bodyYaw, SpatialSection section) {
+    private static float targetOrbit(SpatialSection target) {
+        SpatialConfig cfg = SpatialConfig.get();
+        float base = -11.0F;
+        return base + (float)(target.orbitDegrees - base) * cfg.tabOrbitStrength;
+    }
+
+    private static float targetHeight(SpatialSection target) {
+        SpatialConfig cfg = SpatialConfig.get();
+        float base = 0.27F;
+        return base + (float)(target.heightOffset - base) * cfg.tabVerticalStrength;
+    }
+
+    private static Target menuTarget(LocalPlayer player, float partial, float bodyYaw,
+                                     float orbitDegrees, float heightOffset, double lookOffset) {
         Vec3 base = interpolatedBody(player, partial);
         Vec3 focus = base.add(0.0, 1.28, 0.0);
         Vec3 forward = Vec3.directionFromRotation(0.0F, bodyYaw).multiply(1.0, 0.0, 1.0).normalize();
         Vec3 right = new Vec3(-forward.z, 0.0, forward.x);
 
-        double distance = section.distance;
-        double side = section.sideOffset;
-        double up = section.heightOffset;
-        if (SpatialConfig.get().menuParallax) {
-            side += mouseXNorm * 0.09;
-            up += -mouseYNorm * 0.055;
+        double angle = Math.toRadians(orbitDegrees);
+        double forwardAmount = Math.cos(angle) * MENU_DISTANCE;
+        double rightAmount = Math.sin(angle) * MENU_DISTANCE;
+        double up = heightOffset;
+
+        SpatialConfig cfg = SpatialConfig.get();
+        if (cfg.menuParallax) {
+            rightAmount += mouseXNorm * cfg.parallaxStrength;
+            up += -mouseYNorm * cfg.parallaxStrength * 0.62;
         }
 
-        Vec3 eye = focus.add(forward.scale(distance)).add(right.scale(side)).add(0.0, up, 0.0);
-        Vec3 lookAt = focus.add(right.scale(section.lookOffset));
+        Vec3 eye = focus.add(forward.scale(forwardAmount)).add(right.scale(rightAmount)).add(0.0, up, 0.0);
+        Vec3 lookAt = focus.add(right.scale(lookOffset));
         return new Target(eye, lookAt);
     }
 
@@ -185,8 +219,7 @@ public final class SpatialCamera {
     }
 
     private static Vec3 interpolatedEye(LocalPlayer player, float partial) {
-        Vec3 p = interpolatedBody(player, partial);
-        return p.add(0.0, player.getEyeHeight(), 0.0);
+        return interpolatedBody(player, partial).add(0.0, player.getEyeHeight(), 0.0);
     }
 
     private static void syncCameraEntity() {
