@@ -27,6 +27,7 @@ public final class SpatialMenuScreen extends Screen {
     private int searchW;
     private boolean searchFocused;
     private String search = "";
+    private int rowScroll;
 
     public SpatialMenuScreen() {
         super(Component.literal("Spatial Client"));
@@ -46,12 +47,16 @@ public final class SpatialMenuScreen extends Screen {
         HeadTracking.updateMouse(mouseX, mouseY, width, height);
         layout();
 
-        int accent = 0xFF000000 | SpatialConfig.get().accentRgb;
-        UiRenderer.shadow(g, panelX, panelY, panelW, panelH, 15.0F);
-        UiRenderer.roundedRect(g, panelX, panelY, panelW, panelH, 15.0F, 0xF20D0F23);
+        SpatialConfig cfg = SpatialConfig.get();
+        int accent = 0xFF000000 | cfg.accentRgb;
+        int radius = cfg.menuRadius;
+        int panelAlpha = Math.round(cfg.menuOpacity / 100.0F * 245.0F);
+        int sideAlpha = Math.round(cfg.menuOpacity / 100.0F * 250.0F);
+        UiRenderer.shadow(g, panelX, panelY, panelW, panelH, radius);
+        UiRenderer.roundedRect(g, panelX, panelY, panelW, panelH, radius, (panelAlpha << 24) | 0x0D0F23);
 
-        UiRenderer.roundedRect(g, panelX + 1, panelY + 1, sidebarW, panelH - 2, 14.0F, 0xF5070919);
-        g.fill(panelX + sidebarW - 14, panelY + 1, panelX + sidebarW + 1, panelY + panelH - 1, 0xF5070919);
+        UiRenderer.roundedRect(g, panelX + 1, panelY + 1, sidebarW, panelH - 2, Math.max(7, radius - 1), (sideAlpha << 24) | 0x070919);
+        g.fill(panelX + sidebarW - radius, panelY + 1, panelX + sidebarW + 1, panelY + panelH - 1, (sideAlpha << 24) | 0x070919);
         g.fill(panelX + sidebarW, panelY + 16, panelX + sidebarW + 1, panelY + panelH - 16, 0x55262A48);
 
         drawBrand(g, accent);
@@ -147,9 +152,13 @@ public final class SpatialMenuScreen extends Screen {
 
         int rowH = 47;
         int gap = 7;
-        for (int i = 0; i < visible.size(); i++) {
+        int capacity = Math.max(1, (panelY + panelH - 14 - y) / (rowH + gap));
+        int maxScroll = Math.max(0, visible.size() - capacity);
+        rowScroll = Math.max(0, Math.min(rowScroll, maxScroll));
+        int first = rowScroll;
+        for (int i = first; i < visible.size(); i++) {
             Row row = visible.get(i);
-            int ry = y + i * (rowH + gap);
+            int ry = y + (i - first) * (rowH + gap);
             if (ry + rowH > panelY + panelH - 14) break;
             boolean hover = inside(mouseX, mouseY, x, ry, right - x, rowH);
             UiRenderer.roundedOutline(g, x, ry, right - x, rowH, 9, 1,
@@ -252,8 +261,10 @@ public final class SpatialMenuScreen extends Screen {
         int rowH = 47;
         int gap = 7;
         List<Row> visible = visibleRows();
-        for (int i = 0; i < visible.size(); i++) {
-            int yy = ry + i * (rowH + gap);
+        int capacity = Math.max(1, (panelY + panelH - 14 - ry) / (rowH + gap));
+        int first = Math.min(rowScroll, Math.max(0, visible.size() - capacity));
+        for (int i = first; i < visible.size(); i++) {
+            int yy = ry + (i - first) * (rowH + gap);
             if (yy + rowH > panelY + panelH - 14) break;
             if (inside(mouseX, mouseY, x, yy, right - x, rowH)) {
                 visible.get(i).action.run();
@@ -266,9 +277,22 @@ public final class SpatialMenuScreen extends Screen {
     }
 
     @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        List<Row> visible = visibleRows();
+        int rowH = 47;
+        int gap = 7;
+        int y = panelY + 98;
+        int capacity = Math.max(1, (panelY + panelH - 14 - y) / (rowH + gap));
+        int max = Math.max(0, visible.size() - capacity);
+        rowScroll = Math.max(0, Math.min(max, rowScroll + (delta < 0 ? 1 : -1)));
+        return true;
+    }
+
+    @Override
     public boolean charTyped(char codePoint, int modifiers) {
         if (searchFocused && codePoint >= 32 && codePoint <= 126 && search.length() < 28) {
             search += codePoint;
+            rowScroll = 0;
             return true;
         }
         return super.charTyped(codePoint, modifiers);
@@ -279,6 +303,7 @@ public final class SpatialMenuScreen extends Screen {
         if (searchFocused) {
             if (keyCode == GLFW.GLFW_KEY_BACKSPACE && !search.isEmpty()) {
                 search = search.substring(0, search.length() - 1);
+                rowScroll = 0;
                 return true;
             }
             if (keyCode == GLFW.GLFW_KEY_ENTER) {
@@ -313,13 +338,15 @@ public final class SpatialMenuScreen extends Screen {
         section = s;
         search = "";
         searchFocused = false;
+        rowScroll = 0;
         SpatialCamera.setSection(s);
         rebuildRows();
     }
 
     private void layout() {
-        panelW = Math.min(700, Math.max(520, width - 56));
-        panelH = Math.min(422, Math.max(350, height - 50));
+        float scale = SpatialConfig.get().menuScale;
+        panelW = Math.min(width - 28, Math.round(Math.min(700, Math.max(520, width - 56)) * scale));
+        panelH = Math.min(height - 24, Math.round(Math.min(422, Math.max(350, height - 50)) * scale));
         sidebarW = Math.min(154, Math.max(132, panelW / 5));
         panelX = Math.max(18, (width - panelW) / 2 - Math.min(66, width / 16));
         panelY = Math.max(16, (height - panelH) / 2);
@@ -340,31 +367,99 @@ public final class SpatialMenuScreen extends Screen {
         SpatialConfig c = SpatialConfig.get();
         switch (section) {
             case VISUALS -> {
-                rows.add(toggle("Custom Crosshair", "Clean local crosshair replacement with three styles", () -> c.customCrosshair, v -> c.customCrosshair = v));
-                rows.add(cycle("Crosshair Style", "Switch between cross, dot and bracket shapes", () -> pretty(c.crosshairStyle.name()), () -> c.crosshairStyle = next(c.crosshairStyle, SpatialConfig.CrosshairStyle.values())));
+                rows.add(toggle("Custom Crosshair", "Replaces only your local crosshair; never changes server aim or reach.", () -> c.customCrosshair, v -> c.customCrosshair = v));
+                rows.add(cycle("Crosshair Style", "Cross, dot or bracket shape.", () -> pretty(c.crosshairStyle.name()), () -> c.crosshairStyle = next(c.crosshairStyle, SpatialConfig.CrosshairStyle.values())));
+                rows.add(cycle("Crosshair Size", "Changes the arm length / dot radius.", () -> c.crosshairSize + "px", () -> c.crosshairSize = nextInt(c.crosshairSize, 3, 14, 1)));
+                rows.add(cycle("Crosshair Gap", "Controls empty space around the exact center.", () -> c.crosshairGap + "px", () -> c.crosshairGap = nextInt(c.crosshairGap, 0, 8, 1)));
+                rows.add(cycle("Crosshair Thickness", "Makes crosshair strokes thinner or thicker.", () -> c.crosshairThickness + "px", () -> c.crosshairThickness = nextInt(c.crosshairThickness, 1, 4, 1)));
+                rows.add(cycle("Crosshair Opacity", "Controls crosshair transparency.", () -> c.crosshairOpacity + "%", () -> c.crosshairOpacity = nextInt(c.crosshairOpacity, 20, 100, 5)));
+                rows.add(toggle("Crosshair Outline", "Adds a dark outline so the crosshair stays readable on bright blocks.", () -> c.crosshairOutline, v -> c.crosshairOutline = v));
+                rows.add(toggle("Crosshair Accent", "Use the client accent color instead of a separate crosshair color.", () -> c.crosshairUseAccent, v -> c.crosshairUseAccent = v));
+                rows.add(cycle("Crosshair Color", "Separate local color used when Accent is off.", () -> accentName(c.crosshairColorRgb), () -> c.crosshairColorRgb = nextAccent(c.crosshairColorRgb)));
             }
             case HUD -> {
-                rows.add(toggle("FPS Counter", "Small rounded performance counter", () -> c.fpsHud, v -> c.fpsHud = v));
-                rows.add(toggle("Ping Counter", "Current multiplayer latency", () -> c.pingHud, v -> c.pingHud = v));
-                rows.add(toggle("Coordinates", "Compact XYZ display", () -> c.coordinatesHud, v -> c.coordinatesHud = v));
-                rows.add(toggle("Keystrokes", "WASD and mouse input display", () -> c.keystrokesHud, v -> c.keystrokesHud = v));
-                rows.add(toggle("Armor HUD", "Armor items above the hotbar", () -> c.armorHud, v -> c.armorHud = v));
-                rows.add(toggle("Effect List", "Active effects with clean timing text", () -> c.effectsHud, v -> c.effectsHud = v));
+                rows.add(toggle("FPS Counter", "Live local framerate pill.", () -> c.fpsHud, v -> c.fpsHud = v));
+                rows.add(cycle("FPS Scale", "Size of only the FPS widget.", () -> scaleLabel(c.fpsScale), () -> c.fpsScale = nextFloat(c.fpsScale, .70F, 1.55F, .05F)));
+                rows.add(cycle("FPS Opacity", "Background transparency of the FPS widget.", () -> pct(c.fpsOpacity), () -> c.fpsOpacity = nextFloat(c.fpsOpacity, .20F, 1.0F, .10F)));
+                rows.add(cycle("FPS Corner", "Choose which screen corner owns the FPS widget.", () -> pretty(c.fpsCorner.name()), () -> c.fpsCorner = next(c.fpsCorner, SpatialConfig.HudCorner.values())));
+                rows.add(toggle("FPS Accent Bar", "Show the small theme-colored marker.", () -> c.fpsAccentBar, v -> c.fpsAccentBar = v));
+
+                rows.add(toggle("Ping Counter", "Shows your current multiplayer latency locally.", () -> c.pingHud, v -> c.pingHud = v));
+                rows.add(cycle("Ping Scale", "Size of only the ping widget.", () -> scaleLabel(c.pingScale), () -> c.pingScale = nextFloat(c.pingScale, .70F, 1.55F, .05F)));
+                rows.add(cycle("Ping Opacity", "Background transparency of the ping widget.", () -> pct(c.pingOpacity), () -> c.pingOpacity = nextFloat(c.pingOpacity, .20F, 1.0F, .10F)));
+                rows.add(cycle("Ping Corner", "Choose the ping widget anchor corner.", () -> pretty(c.pingCorner.name()), () -> c.pingCorner = next(c.pingCorner, SpatialConfig.HudCorner.values())));
+                rows.add(toggle("Ping Accent Bar", "Show the theme marker on the ping widget.", () -> c.pingAccentBar, v -> c.pingAccentBar = v));
+
+                rows.add(toggle("Coordinates", "Displays your local XYZ position.", () -> c.coordinatesHud, v -> c.coordinatesHud = v));
+                rows.add(cycle("Coordinates Scale", "Independent size for XYZ.", () -> scaleLabel(c.coordinatesScale), () -> c.coordinatesScale = nextFloat(c.coordinatesScale, .70F, 1.55F, .05F)));
+                rows.add(cycle("Coordinates Opacity", "XYZ background transparency.", () -> pct(c.coordinatesOpacity), () -> c.coordinatesOpacity = nextFloat(c.coordinatesOpacity, .20F, 1.0F, .10F)));
+                rows.add(cycle("Coordinates Corner", "Move XYZ to any screen corner.", () -> pretty(c.coordinatesCorner.name()), () -> c.coordinatesCorner = next(c.coordinatesCorner, SpatialConfig.HudCorner.values())));
+                rows.add(toggle("Decimal Coordinates", "Show one decimal place instead of block coordinates.", () -> c.decimalCoordinates, v -> c.decimalCoordinates = v));
+                rows.add(toggle("Coordinates Accent", "Show the accent marker beside XYZ.", () -> c.coordinatesAccentBar, v -> c.coordinatesAccentBar = v));
+
+                rows.add(toggle("Keystrokes", "Animated WASD display using your real local input.", () -> c.keystrokesHud, v -> c.keystrokesHud = v));
+                rows.add(cycle("Keystrokes Scale", "Resize the full key cluster.", () -> scaleLabel(c.keystrokesScale), () -> c.keystrokesScale = nextFloat(c.keystrokesScale, .70F, 1.55F, .05F)));
+                rows.add(cycle("Keystrokes Opacity", "Transparency of inactive keys.", () -> pct(c.keystrokesOpacity), () -> c.keystrokesOpacity = nextFloat(c.keystrokesOpacity, .20F, 1.0F, .10F)));
+                rows.add(cycle("Keystrokes Corner", "Anchor WASD in any corner.", () -> pretty(c.keystrokesCorner.name()), () -> c.keystrokesCorner = next(c.keystrokesCorner, SpatialConfig.HudCorner.values())));
+                rows.add(toggle("Mouse Buttons", "Include LMB/RMB below the WASD keys.", () -> c.keystrokesMouseButtons, v -> c.keystrokesMouseButtons = v));
+
+                rows.add(toggle("Armor HUD", "Shows your equipped armor as a compact local overlay.", () -> c.armorHud, v -> c.armorHud = v));
+                rows.add(cycle("Armor Scale", "Resize armor item icons.", () -> scaleLabel(c.armorScale), () -> c.armorScale = nextFloat(c.armorScale, .70F, 1.55F, .05F)));
+                rows.add(cycle("Armor Anchor", "Above hotbar, top center or bottom right.", () -> pretty(c.armorAnchor.name()), () -> c.armorAnchor = next(c.armorAnchor, SpatialConfig.ArmorAnchor.values())));
+                rows.add(toggle("Armor Durability", "Keep vanilla durability/count decorations on armor icons.", () -> c.armorDurability, v -> c.armorDurability = v));
+
+                rows.add(toggle("Effect List", "Lists active potion/status effects locally.", () -> c.effectsHud, v -> c.effectsHud = v));
+                rows.add(cycle("Effects Scale", "Resize the effect list.", () -> scaleLabel(c.effectsScale), () -> c.effectsScale = nextFloat(c.effectsScale, .70F, 1.55F, .05F)));
+                rows.add(cycle("Effects Opacity", "Effect-card background transparency.", () -> pct(c.effectsOpacity), () -> c.effectsOpacity = nextFloat(c.effectsOpacity, .20F, 1.0F, .10F)));
+                rows.add(cycle("Effects Corner", "Choose where the list grows from.", () -> pretty(c.effectsCorner.name()), () -> c.effectsCorner = next(c.effectsCorner, SpatialConfig.HudCorner.values())));
+                rows.add(toggle("Effect Durations", "Show remaining time beside every effect.", () -> c.effectsDuration, v -> c.effectsDuration = v));
+                rows.add(cycle("Effect Sort", "Sort effects by remaining duration or alphabetically.", () -> pretty(c.effectsSort.name()), () -> c.effectsSort = next(c.effectsSort, SpatialConfig.EffectSort.values())));
             }
             case COSMETICS -> {
-                rows.add(toggle("Player Aura", "Animated client-side ribbons around your own body", () -> c.aura, v -> c.aura = v));
-                rows.add(cycle("Aura Style", "Flowing orbit, vertical helix or halo flow", () -> pretty(c.auraStyle.name()), () -> c.auraStyle = next(c.auraStyle, SpatialConfig.AuraStyle.values())));
-                rows.add(cycle("Aura Intensity", "Controls how many animated aura layers render", () -> Integer.toString(c.auraIntensity), () -> c.auraIntensity = c.auraIntensity >= 3 ? 1 : c.auraIntensity + 1));
+                rows.add(toggle("Player Aura", "Curved animated ribbons orbit only your own rendered player.", () -> c.aura, v -> c.aura = v));
+                rows.add(cycle("Aura Style", "Orbit rings, vertical helix or diagonal flowing ribbon.", () -> pretty(c.auraStyle.name()), () -> c.auraStyle = next(c.auraStyle, SpatialConfig.AuraStyle.values())));
+                rows.add(cycle("Aura Layers", "How many independent animated ribbon layers are rendered.", () -> Integer.toString(c.auraIntensity), () -> c.auraIntensity = nextInt(c.auraIntensity, 1, 4, 1)));
+                rows.add(cycle("Aura Speed", "How quickly the ribbons rotate around your body.", () -> speedLabel(c.auraSpeed), () -> c.auraSpeed = nextFloat(c.auraSpeed, .25F, 2.50F, .25F)));
+                rows.add(cycle("Aura Radius", "Distance of the ribbon from the player model.", () -> decimal(c.auraRadius), () -> c.auraRadius = nextFloat(c.auraRadius, .30F, .90F, .05F)));
+                rows.add(cycle("Aura Height", "Vertical span used by helix/ribbon styles.", () -> decimal(c.auraHeight), () -> c.auraHeight = nextFloat(c.auraHeight, .70F, 2.35F, .10F)));
+                rows.add(cycle("Aura Width", "Thickness of the curved ribbon geometry.", () -> decimal(c.auraWidth), () -> c.auraWidth = nextFloat(c.auraWidth, .015F, .12F, .015F)));
+                rows.add(cycle("Aura Wave", "How strongly the aura curves and waves while spinning.", () -> decimal(c.auraWave), () -> c.auraWave = nextFloat(c.auraWave, 0.0F, .30F, .025F)));
+                rows.add(cycle("Aura Opacity", "Transparency of the animated aura.", () -> pct(c.auraOpacity), () -> c.auraOpacity = nextFloat(c.auraOpacity, .15F, 1.0F, .10F)));
+                rows.add(toggle("Aura Accent", "Use the main client accent for the aura.", () -> c.auraUseAccent, v -> c.auraUseAccent = v));
+                rows.add(cycle("Aura Color", "Independent aura color when Accent is disabled.", () -> accentName(c.auraColorRgb), () -> c.auraColorRgb = nextAccent(c.auraColorRgb)));
+
+                rows.add(toggle("Halo", "Separate animated halo above your skin; completely client-side.", () -> c.halo, v -> c.halo = v));
+                rows.add(cycle("Halo Style", "Clean ring, double ring or crossed orbital rings.", () -> pretty(c.haloStyle.name()), () -> c.haloStyle = next(c.haloStyle, SpatialConfig.HaloStyle.values())));
+                rows.add(cycle("Halo Speed", "Spin speed of the halo geometry.", () -> speedLabel(c.haloSpeed), () -> c.haloSpeed = nextFloat(c.haloSpeed, 0.0F, 2.50F, .25F)));
+                rows.add(cycle("Halo Radius", "Overall halo diameter around your head.", () -> decimal(c.haloRadius), () -> c.haloRadius = nextFloat(c.haloRadius, .24F, .75F, .04F)));
+                rows.add(cycle("Halo Height", "Raises or lowers the halo above the player.", () -> decimal(c.haloHeight), () -> c.haloHeight = nextFloat(c.haloHeight, 1.55F, 2.55F, .05F)));
+                rows.add(cycle("Halo Width", "Ring thickness.", () -> decimal(c.haloWidth), () -> c.haloWidth = nextFloat(c.haloWidth, .012F, .10F, .011F)));
+                rows.add(cycle("Halo Tilt", "Tilts the ring plane for a more 3D look.", () -> Math.round(c.haloTilt) + " deg", () -> c.haloTilt = nextFloat(c.haloTilt, -45.0F, 45.0F, 5.0F)));
+                rows.add(cycle("Halo Opacity", "Transparency of the halo.", () -> pct(c.haloOpacity), () -> c.haloOpacity = nextFloat(c.haloOpacity, .15F, 1.0F, .10F)));
+                rows.add(toggle("Halo Accent", "Use the client accent color for the halo.", () -> c.haloUseAccent, v -> c.haloUseAccent = v));
+                rows.add(cycle("Halo Color", "Independent halo color when Accent is off.", () -> accentName(c.haloColorRgb), () -> c.haloColorRgb = nextAccent(c.haloColorRgb)));
             }
             case CAMERA -> {
-                rows.add(toggle("Head Follow", "Your rendered skin looks toward the cursor", () -> c.headFollow, v -> c.headFollow = v));
-                rows.add(toggle("Cursor Parallax", "Very small menu camera response to mouse movement", () -> c.menuParallax, v -> c.menuParallax = v));
-                rows.add(toggle("Camera Collision", "Prevents the spatial camera from entering blocks", () -> c.cameraCollision, v -> c.cameraCollision = v));
-                rows.add(cycle("Camera Motion", "Choose soft, balanced or snappy interpolation", () -> smoothingLabel(c.cameraSmoothness), () -> c.cameraSmoothness = nextSmoothness(c.cameraSmoothness)));
+                rows.add(toggle("Head Follow", "Your rendered skin head follows the cursor while the spatial menu is open.", () -> c.headFollow, v -> c.headFollow = v));
+                rows.add(toggle("Face Camera", "Render-only body rotation keeps your skin facing the orbiting camera.", () -> c.bodyFacesCamera, v -> c.bodyFacesCamera = v));
+                rows.add(cycle("Head Yaw Range", "Maximum left/right head-follow angle.", () -> Math.round(c.headFollowYaw) + " deg", () -> c.headFollowYaw = nextFloat(c.headFollowYaw, 5.0F, 60.0F, 5.0F)));
+                rows.add(cycle("Head Pitch Range", "Maximum up/down head-follow angle.", () -> Math.round(c.headFollowPitch) + " deg", () -> c.headFollowPitch = nextFloat(c.headFollowPitch, 4.0F, 32.0F, 4.0F)));
+                rows.add(cycle("Head Follow Speed", "How quickly the head eases toward your cursor.", () -> decimal(c.headFollowSpeed), () -> c.headFollowSpeed = nextFloat(c.headFollowSpeed, .05F, .50F, .05F)));
+                rows.add(toggle("Cursor Parallax", "Small camera response to cursor movement without changing the base shot.", () -> c.menuParallax, v -> c.menuParallax = v));
+                rows.add(cycle("Parallax Strength", "Controls only the tiny cursor camera offset.", () -> decimal(c.parallaxStrength), () -> c.parallaxStrength = nextFloat(c.parallaxStrength, 0.0F, .18F, .02F)));
+                rows.add(toggle("Camera Collision", "Stops the spatial camera from clipping inside blocks.", () -> c.cameraCollision, v -> c.cameraCollision = v));
+                rows.add(cycle("Collision Padding", "Distance kept away from the hit wall.", () -> decimal(c.collisionPadding), () -> c.collisionPadding = nextFloat(c.collisionPadding, .05F, .45F, .05F)));
+                rows.add(cycle("Camera Smoothness", "Easing strength for the spatial camera without changing its base placement.", () -> decimal(c.cameraSmoothness), () -> c.cameraSmoothness = nextFloat(c.cameraSmoothness, .08F, .40F, .04F)));
+                rows.add(cycle("Tab Orbit Amount", "How much tab changes orbit around you; 1.0 uses the full choreography.", () -> decimal(c.tabOrbitStrength), () -> c.tabOrbitStrength = nextFloat(c.tabOrbitStrength, .25F, 1.35F, .10F)));
+                rows.add(cycle("Tab Vertical Amount", "How strongly tabs travel upward/downward.", () -> decimal(c.tabVerticalStrength), () -> c.tabVerticalStrength = nextFloat(c.tabVerticalStrength, 0.0F, 1.50F, .10F)));
+                rows.add(cycle("Tab Transition Speed", "Speed of the smooth 3D orbit between categories.", () -> speedLabel(c.tabTransitionSpeed), () -> c.tabTransitionSpeed = nextFloat(c.tabTransitionSpeed, .55F, 1.80F, .10F)));
             }
             case SETTINGS -> {
-                rows.add(cycle("Accent Color", "Changes the client accent without changing the layout", () -> accentName(c.accentRgb), () -> c.accentRgb = nextAccent(c.accentRgb)));
-                rows.add(cycle("Reset Visuals", "Restores every visual setting to the defaults", () -> "RESET", SpatialMenuScreen::resetVisuals));
+                rows.add(cycle("Accent Color", "Master accent used by GUI, HUD, aura and halo when linked.", () -> accentName(c.accentRgb), () -> c.accentRgb = nextAccent(c.accentRgb)));
+                rows.add(cycle("Menu Opacity", "Overall transparency of the rounded menu surface.", () -> c.menuOpacity + "%", () -> c.menuOpacity = nextInt(c.menuOpacity, 70, 100, 5)));
+                rows.add(cycle("Menu Scale", "Resize the complete Prestige-style client panel.", () -> scaleLabel(c.menuScale), () -> c.menuScale = nextFloat(c.menuScale, .85F, 1.15F, .05F)));
+                rows.add(cycle("Corner Radius", "Roundness of the main menu shell.", () -> c.menuRadius + "px", () -> c.menuRadius = nextInt(c.menuRadius, 8, 20, 2)));
+                rows.add(cycle("Reset Everything", "Restore every Spatial visual, HUD, cosmetic and camera preference.", () -> "RESET", SpatialMenuScreen::resetVisuals));
             }
             default -> {}
         }
@@ -372,50 +467,71 @@ public final class SpatialMenuScreen extends Screen {
 
     private static int countFor(SpatialSection s) {
         return switch (s) {
-            case VISUALS -> 2;
-            case HUD -> 6;
-            case COSMETICS -> 3;
-            case CAMERA -> 4;
-            case SETTINGS -> 2;
+            case VISUALS -> 9;
+            case HUD -> 31;
+            case COSMETICS -> 22;
+            case CAMERA -> 13;
+            case SETTINGS -> 5;
             default -> 0;
         };
     }
 
     private static String pretty(String s) {
         String lower = s.toLowerCase(Locale.ROOT).replace('_', ' ');
-        return Character.toUpperCase(lower.charAt(0)) + lower.substring(1);
+        String[] words = lower.split(" ");
+        StringBuilder out = new StringBuilder();
+        for (String word : words) {
+            if (out.length() > 0) out.append(' ');
+            out.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+        }
+        return out.toString();
+    }
+
+    private static int nextInt(int value, int min, int max, int step) {
+        int next = value + step;
+        return next > max ? min : next;
+    }
+
+    private static float nextFloat(float value, float min, float max, float step) {
+        float next = Math.round((value + step) * 1000.0F) / 1000.0F;
+        return next > max + 0.0001F ? min : next;
+    }
+
+    private static String pct(float v) {
+        return Math.round(v * 100.0F) + "%";
+    }
+
+    private static String decimal(float v) {
+        String text = String.format(Locale.ROOT, "%.3f", v);
+        while (text.contains(".") && (text.endsWith("0") || text.endsWith("."))) {
+            text = text.substring(0, text.length() - 1);
+        }
+        return text;
+    }
+
+    private static String scaleLabel(float v) {
+        return Math.round(v * 100.0F) + "%";
+    }
+
+    private static String speedLabel(float v) {
+        return decimal(v) + "x";
     }
 
     private static void resetVisuals() {
         SpatialConfig c = SpatialConfig.get();
-        c.fpsHud = true;
-        c.pingHud = true;
-        c.coordinatesHud = true;
-        c.keystrokesHud = true;
-        c.armorHud = true;
-        c.effectsHud = true;
-        c.customCrosshair = true;
-        c.aura = true;
-        c.headFollow = true;
-        c.menuParallax = true;
-        c.cameraCollision = true;
-        c.auraStyle = SpatialConfig.AuraStyle.ORBIT;
-        c.crosshairStyle = SpatialConfig.CrosshairStyle.CROSS;
-        c.auraIntensity = 2;
-        c.cameraSmoothness = 0.18F;
-        c.accentRgb = 0x7700FF;
-    }
-
-    private static float nextSmoothness(float current) {
-        if (current < 0.14F) return 0.18F;
-        if (current < 0.24F) return 0.30F;
-        return 0.10F;
-    }
-
-    private static String smoothingLabel(float v) {
-        if (v < 0.14F) return "Soft";
-        if (v < 0.24F) return "Balanced";
-        return "Snappy";
+        c.customCrosshair = true; c.crosshairStyle = SpatialConfig.CrosshairStyle.CROSS; c.crosshairSize = 7; c.crosshairGap = 1;
+        c.crosshairThickness = 1; c.crosshairOpacity = 100; c.crosshairOutline = true; c.crosshairUseAccent = true; c.crosshairColorRgb = 0xFFFFFF;
+        c.fpsHud = true; c.fpsScale = 1; c.fpsOpacity = .72F; c.fpsCorner = SpatialConfig.HudCorner.TOP_LEFT; c.fpsAccentBar = true;
+        c.pingHud = true; c.pingScale = 1; c.pingOpacity = .72F; c.pingCorner = SpatialConfig.HudCorner.TOP_LEFT; c.pingAccentBar = true;
+        c.coordinatesHud = true; c.coordinatesScale = 1; c.coordinatesOpacity = .72F; c.coordinatesCorner = SpatialConfig.HudCorner.TOP_LEFT; c.decimalCoordinates = false; c.coordinatesAccentBar = true;
+        c.keystrokesHud = true; c.keystrokesScale = 1; c.keystrokesOpacity = .72F; c.keystrokesCorner = SpatialConfig.HudCorner.BOTTOM_LEFT; c.keystrokesMouseButtons = true;
+        c.armorHud = true; c.armorScale = 1; c.armorAnchor = SpatialConfig.ArmorAnchor.ABOVE_HOTBAR; c.armorDurability = true;
+        c.effectsHud = true; c.effectsScale = 1; c.effectsOpacity = .72F; c.effectsCorner = SpatialConfig.HudCorner.TOP_RIGHT; c.effectsDuration = true; c.effectsSort = SpatialConfig.EffectSort.DURATION;
+        c.aura = true; c.auraStyle = SpatialConfig.AuraStyle.ORBIT; c.auraIntensity = 2; c.auraSpeed = 1; c.auraRadius = .52F; c.auraHeight = 1.75F; c.auraWidth = .055F; c.auraWave = .12F; c.auraOpacity = .72F; c.auraUseAccent = true; c.auraColorRgb = 0x7700FF;
+        c.halo = true; c.haloStyle = SpatialConfig.HaloStyle.CLEAN_RING; c.haloSpeed = .8F; c.haloRadius = .43F; c.haloHeight = 2.02F; c.haloWidth = .04F; c.haloTilt = 11; c.haloOpacity = .72F; c.haloUseAccent = true; c.haloColorRgb = 0x7700FF;
+        c.headFollow = true; c.headFollowYaw = 28; c.headFollowPitch = 16; c.headFollowSpeed = .18F; c.bodyFacesCamera = true;
+        c.menuParallax = true; c.parallaxStrength = .09F; c.cameraCollision = true; c.collisionPadding = .20F; c.cameraSmoothness = .18F; c.tabOrbitStrength = 1; c.tabVerticalStrength = 1; c.tabTransitionSpeed = 1;
+        c.accentRgb = 0x7700FF; c.menuOpacity = 95; c.menuScale = 1; c.menuRadius = 15;
     }
 
     private static int nextAccent(int rgb) {
@@ -423,6 +539,8 @@ public final class SpatialMenuScreen extends Screen {
         if (rgb == 0x8066FF) return 0x00A8FF;
         if (rgb == 0x00A8FF) return 0x00D6A3;
         if (rgb == 0x00D6A3) return 0xFF4D8D;
+        if (rgb == 0xFF4D8D) return 0xFFB020;
+        if (rgb == 0xFFB020) return 0xFFFFFF;
         return 0x7700FF;
     }
 
@@ -433,6 +551,8 @@ public final class SpatialMenuScreen extends Screen {
             case 0x00A8FF -> "Ocean";
             case 0x00D6A3 -> "Mint";
             case 0xFF4D8D -> "Rose";
+            case 0xFFB020 -> "Amber";
+            case 0xFFFFFF -> "White";
             default -> "Custom";
         };
     }
