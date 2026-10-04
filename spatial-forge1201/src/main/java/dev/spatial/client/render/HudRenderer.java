@@ -10,7 +10,18 @@ import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 public final class HudRenderer {
+    private static int smokeHudFrames;
+    private static int smokeCrosshairFrames;
+
     private HudRenderer() { }
+
+    public static int smokeHudFrames() {
+        return smokeHudFrames;
+    }
+
+    public static int smokeCrosshairFrames() {
+        return smokeCrosshairFrames;
+    }
 
     @SubscribeEvent
     public static void onOverlayPre(RenderGuiOverlayEvent.Pre event) {
@@ -26,8 +37,12 @@ public final class HudRenderer {
         GuiGraphics g = event.getGuiGraphics();
         ClientConfig.Data cfg = ClientConfig.get();
 
-        if (cfg.crosshairEnabled && mc.options.getCameraType() == CameraType.FIRST_PERSON) renderCrosshair(g, cfg);
+        if (cfg.crosshairEnabled && mc.options.getCameraType() == CameraType.FIRST_PERSON) {
+            renderCrosshair(g, cfg);
+            if (Boolean.getBoolean("spatialclient.smokeTest")) smokeCrosshairFrames++;
+        }
         if (cfg.hudEnabled) {
+            if (Boolean.getBoolean("spatialclient.smokeTest")) smokeHudFrames++;
             renderStats(g, cfg);
             if (cfg.showKeystrokes) renderKeystrokes(g, cfg);
         }
