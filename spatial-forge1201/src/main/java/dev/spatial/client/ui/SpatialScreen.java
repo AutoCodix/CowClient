@@ -168,6 +168,27 @@ public final class SpatialScreen extends Screen {
         }
     }
 
+    public void selectPageForSmoke(int ordinal) {
+        if (!Boolean.getBoolean("spatialclient.smokeTest")) {
+            throw new IllegalStateException("Smoke controls are disabled");
+        }
+        if (ordinal < 0 || ordinal >= PAGES.size()) {
+            throw new IndexOutOfBoundsException("Page " + ordinal);
+        }
+        selectPage(PAGES.get(ordinal));
+        if (!smokePreview && SpatialCameraController.isActive()) {
+            SpatialCameraController.setPreset(page.preset);
+        }
+    }
+
+    public int pageCountForSmoke() {
+        return PAGES.size();
+    }
+
+    public String currentPageForSmoke() {
+        return page.label;
+    }
+
     private void renderHome(GuiGraphics g, int x, int y, int w) {
         card(g, x, y, w, 62, "Spatial instead of flat", "Pages move the camera around your player while keeping the face in the composition.");
         card(g, x, y + 72, w, 62, "Skin-first", "Your real skin stays in-world and the head subtly follows your cursor.");
