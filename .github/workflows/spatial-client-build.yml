@@ -35,6 +35,7 @@ jobs:
           mkdir -p SpatialClientProject/src/main/java/dev/spatialclient/config
           cp spatial_refine/src/dev/spatialclient/config/SpatialConfig.java SpatialClientProject/src/main/java/dev/spatialclient/config/SpatialConfig.java
           mkdir -p SpatialClientProject/src/main/resources/assets/spatialclient/textures/gui
+          cp spatial_refine/spatial_logo.png SpatialClientProject/src/main/resources/assets/spatialclient/textures/gui/spatial_logo.png
 
       - name: Build
         working-directory: SpatialClientProject
@@ -53,6 +54,7 @@ jobs:
           jar tf "$JAR" | grep -q 'dev/spatialclient/client/SpatialProfilesScreen.class'
           jar tf "$JAR" | grep -q 'dev/spatialclient/client/SkinEditorScreen.class'
           jar tf "$JAR" | grep -q 'dev/spatialclient/client/InputStats.class'
+          jar tf "$JAR" | grep -q 'assets/spatialclient/textures/gui/spatial_logo.png'
           echo "$JAR"
 
       - name: Upload JAR
