@@ -25,7 +25,8 @@ public final class CowClient implements ClientModInitializer {
     private static float zoomScale=1;
     private static long lastZoomTime=System.nanoTime();
     @Override public void onInitializeClient() {
-        config=new Config(FabricLoader.getInstance().getConfigDir().resolve("cowclient"));
+        config=new Config(FabricLoader.getInstance().getConfigDir().resolve("spatialclient"));
+        LocalAccount.init();
         String profile="Default";
         try {
             var p=FabricLoader.getInstance().getGameDir().resolve("cowclient-profile.txt");
@@ -38,10 +39,10 @@ public final class CowClient implements ClientModInitializer {
         sprint=KeyBindingHelper.registerKeyBinding(new KeyMapping("key.cowclient.sprint",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_G,category));
         ClientTickEvents.END_CLIENT_TICK.register(client->{
             if(lastWorld!=client.level) {lastWorld=client.level;worldStarted=System.currentTimeMillis();sprintLatched=false;}
-            while(menu.consumeClick()) if(client.screen==null) client.setScreen(new CowScreen());
+            while(menu.consumeClick()) if(client.screen==null) client.setScreen(LocalAccount.unlocked()?new CowScreen():new AccountScreen());
             while(sprint.consumeClick()) if(client.screen==null && active("sprint")) {
                 sprintLatched=!sprintLatched;
-                if(client.player!=null) client.player.displayClientMessage(Component.literal("CowClient · Sprint "+(sprintLatched?"enabled":"disabled")),true);
+                if(client.player!=null) client.player.displayClientMessage(Component.literal("Spatial · Sprint "+(sprintLatched?"enabled":"disabled")),true);
             }
             boolean force=active("sprint") && sprintLatched && client.screen==null && client.player!=null;
             if(force) client.options.keySprint.setDown(true);
