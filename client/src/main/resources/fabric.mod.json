@@ -2,14 +2,13 @@
   "schemaVersion": 1,
   "id": "cowclient",
   "version": "${version}",
-  "name": "CowClient",
-  "description": "A quieter Minecraft client. Rounded UI, movable HUD and focused utilities.",
+  "name": "Spatial Client",
+  "description": "Spatial visual client with rounded space UI, local profiles, HUD tools and client-side cosmetics.",
   "authors": [
     "AutoCodix"
   ],
   "environment": "client",
-  "icon": "assets/cowclient/icon.png",
-  "entrypoints": {
+    "entrypoints": {
     "client": [
       "dev.cowclient.CowClient"
     ]
