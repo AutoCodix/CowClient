@@ -52,9 +52,58 @@ public final class HudRenderer {
                     cfg.coordinatesAccentBar, cfg.accentRgb, offsets);
         }
 
+        if (cfg.cpsHud) {
+            drawCornerPill(g, "CPS  " + InputStats.leftCps() + " / " + InputStats.rightCps(),
+                    cfg.cpsCorner, cfg.cpsScale, cfg.cpsOpacity, cfg.cpsAccentBar, cfg.accentRgb, offsets);
+        }
+
+        if (cfg.clockHud) {
+            drawCornerPill(g, "TIME  " + java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")),
+                    cfg.infoCorner, cfg.infoScale, cfg.infoOpacity, true, cfg.accentRgb, offsets);
+        }
+        if (cfg.sessionHud) {
+            drawCornerPill(g, "SESSION  " + formatDuration(InputStats.sessionSeconds()),
+                    cfg.infoCorner, cfg.infoScale, cfg.infoOpacity, true, cfg.accentRgb, offsets);
+        }
+        if (cfg.directionHud) {
+            String dir = player.getDirection().getName().toUpperCase(java.util.Locale.ROOT);
+            drawCornerPill(g, "DIR  " + dir, cfg.infoCorner, cfg.infoScale, cfg.infoOpacity,
+                    true, cfg.accentRgb, offsets);
+        }
+        if (cfg.biomeHud) {
+            String biome = player.level().getBiome(player.blockPosition()).unwrapKey()
+                    .map(k -> prettyPath(k.location().getPath())).orElse("Unknown");
+            drawCornerPill(g, "BIOME  " + biome, cfg.infoCorner, cfg.infoScale, cfg.infoOpacity,
+                    true, cfg.accentRgb, offsets);
+        }
+        if (cfg.memoryHud) {
+            Runtime runtime = Runtime.getRuntime();
+            long used = (runtime.totalMemory() - runtime.freeMemory()) / 1048576L;
+            long max = runtime.maxMemory() / 1048576L;
+            drawCornerPill(g, "MEM  " + used + " / " + max + " MB", cfg.infoCorner, cfg.infoScale, cfg.infoOpacity,
+                    true, cfg.accentRgb, offsets);
+        }
+        if (cfg.durabilityHud) {
+            ItemStack held = player.getMainHandItem();
+            String durability = "DUR  --";
+            if (!held.isEmpty()) {
+                if (held.isDamageableItem()) {
+                    int left = Math.max(0, held.getMaxDamage() - held.getDamageValue());
+                    durability = "DUR  " + left + " / " + held.getMaxDamage();
+                } else {
+                    durability = "ITEM  " + held.getHoverName().getString();
+                }
+            }
+            drawCornerPill(g, durability, cfg.infoCorner, cfg.infoScale, cfg.infoOpacity,
+                    true, cfg.accentRgb, offsets);
+        }
+
         if (cfg.keystrokesHud) drawKeystrokes(g, cfg);
         if (cfg.armorHud) drawArmor(g, player, cfg);
         if (cfg.effectsHud) drawEffects(g, player, cfg);
+        if (cfg.inventoryHud) drawInventoryStrip(g, player, cfg);
+        if (cfg.watermarkHud) drawWatermark(g, cfg);
+        if (cfg.vignette) drawVignette(g, cfg);
     }
 
     public static void onOverlayPre(RenderGuiOverlayEvent.Pre event) {
@@ -250,6 +299,68 @@ public final class HudRenderer {
             offset += h + gap;
             if (offset > g.guiHeight() / 2) break;
         }
+    }
+
+    private static void drawInventoryStrip(GuiGraphics g, LocalPlayer player, SpatialConfig cfg) {
+        float scale = cfg.inventoryScale;
+        int baseW = 9 * 20 + 10;
+        int baseH = 28;
+        int x = (g.guiWidth() - Math.round(baseW * scale)) / 2;
+        int y = g.guiHeight() - Math.round(72 * scale);
+        int alpha = Mth.clamp(Math.round(cfg.inventoryOpacity * 255.0F), 25, 255);
+
+        g.pose().pushPose();
+        g.pose().translate(x, y, 0.0F);
+        g.pose().scale(scale, scale, 1.0F);
+        UiRenderer.roundedRect(g, 0, 0, baseW, baseH, 9, (alpha << 24) | 0x0A0D1C);
+        for (int i = 0; i < 9; i++) {
+            int sx = 6 + i * 20;
+            if (player.getInventory().selected == i) {
+                UiRenderer.roundedOutline(g, sx - 2, 4, 20, 20, 6, 1, 0xFF000000 | cfg.accentRgb, 0x66151A31);
+            }
+            ItemStack stack = player.getInventory().getItem(i);
+            if (!stack.isEmpty()) g.renderItem(stack, sx, 6);
+        }
+        g.pose().popPose();
+    }
+
+    private static void drawWatermark(GuiGraphics g, SpatialConfig cfg) {
+        String text = "SPATIAL  //  " + SpatialLocalAccount.username();
+        float scale = 0.235F;
+        int w = Math.round(UiFont.width(text, scale, UiFont.Weight.SEMIBOLD)) + 18;
+        int x = (g.guiWidth() - w) / 2;
+        UiRenderer.roundedOutline(g, x, 7, w, 18, 8, 1, 0x552D3966, 0x99101629);
+        UiRenderer.circle(g, x + 9, 16, 2.2F, 0xFF000000 | cfg.accentRgb);
+        UiFont.draw(g, text, x + 16, 11, 0xFFDCE3F7, scale, UiFont.Weight.SEMIBOLD);
+    }
+
+    private static void drawVignette(GuiGraphics g, SpatialConfig cfg) {
+        int alpha = Mth.clamp(cfg.vignetteStrength, 5, 80);
+        int c = (alpha << 24);
+        int edgeX = Math.max(12, g.guiWidth() / 18);
+        int edgeY = Math.max(10, g.guiHeight() / 14);
+        g.fill(0, 0, edgeX, g.guiHeight(), c);
+        g.fill(g.guiWidth() - edgeX, 0, g.guiWidth(), g.guiHeight(), c);
+        g.fill(0, 0, g.guiWidth(), edgeY, c);
+        g.fill(0, g.guiHeight() - edgeY, g.guiWidth(), g.guiHeight(), c);
+    }
+
+    private static String formatDuration(long seconds) {
+        long h = seconds / 3600L;
+        long m = (seconds / 60L) % 60L;
+        long s = seconds % 60L;
+        return String.format(java.util.Locale.ROOT, "%02d:%02d:%02d", h, m, s);
+    }
+
+    private static String prettyPath(String path) {
+        String[] words = path.replace('-', '_').split("_");
+        StringBuilder out = new StringBuilder();
+        for (String word : words) {
+            if (word.isEmpty()) continue;
+            if (out.length() > 0) out.append(' ');
+            out.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+        }
+        return out.toString();
     }
 
     private static int[] anchored(GuiGraphics g, SpatialConfig.HudCorner corner, int w, int h, int margin) {
