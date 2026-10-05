@@ -1,7 +1,7 @@
 plugins { id 'fabric-loom' version '1.14.10' }
-version = '0.1.0-alpha'
+version = '0.2.0-spatial'
 group = 'dev.cowclient'
-base { archivesName = 'CowClient' }
+base { archivesName = 'SpatialClient' }
 repositories { mavenCentral() }
 dependencies {
     minecraft 'com.mojang:minecraft:1.21.11'
