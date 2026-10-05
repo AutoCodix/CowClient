@@ -37,6 +37,8 @@ public final class ClientEvents {
         public static void clientTick(TickEvent.ClientTickEvent event) {
             if (event.phase != TickEvent.Phase.END) return;
             Minecraft mc = Minecraft.getInstance();
+            InputStats.tick(mc);
+            SpatialLocalAccount.init();
             if (mc.player == null || mc.level == null) {
                 if (SpatialCamera.isAnySpatialCameraActive()) SpatialCamera.forceRestore();
                 return;
@@ -50,8 +52,12 @@ public final class ClientEvents {
 
             if (mc.screen == null && ModBus.OPEN_MENU.consumeClick()) {
                 SpatialConfig.get();
-                SpatialCamera.open();
-                if (SpatialCamera.isMenuCameraActive()) mc.setScreen(new SpatialMenuScreen());
+                if (!SpatialLocalAccount.isUnlocked()) {
+                    mc.setScreen(new SpatialAccountScreen());
+                } else {
+                    SpatialCamera.open();
+                    if (SpatialCamera.isMenuCameraActive()) mc.setScreen(new SpatialMenuScreen());
+                }
             }
         }
 
