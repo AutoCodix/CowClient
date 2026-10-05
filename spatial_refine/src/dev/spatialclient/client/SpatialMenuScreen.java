@@ -4,6 +4,7 @@ import dev.spatialclient.config.SpatialConfig;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 
 public final class SpatialMenuScreen extends Screen {
+    private static final ResourceLocation SPATIAL_LOGO = new ResourceLocation("spatialclient", "textures/gui/spatial_logo.png");
     private static final SpatialSection[] MODULE_SECTIONS = {
             SpatialSection.VISUALS, SpatialSection.HUD, SpatialSection.COSMETICS, SpatialSection.CAMERA
     };
@@ -69,20 +71,10 @@ public final class SpatialMenuScreen extends Screen {
     private void drawBrand(GuiGraphics g, int accent) {
         int bx = panelX + 13;
         int by = panelY + 12;
-        UiRenderer.roundedOutline(g, bx, by, 28, 28, 9, 1, 0xFF31467A, 0xFF070B1B);
-        // Tiny in-client version of the new Spatial S + orbit mark. No external font atlas.
-        UiRenderer.circle(g, bx + 9.0F, by + 14.0F, 6.4F, 0xFF0B1738);
-        UiRenderer.circle(g, bx + 9.0F, by + 14.0F, 4.4F, 0xFF7B46FF);
-        UiRenderer.circle(g, bx + 9.0F, by + 14.0F, 2.4F, 0xFFF1E9FF);
-        UiRenderer.roundedRect(g, bx + 15, by + 7, 8, 3, 2, 0xFF5CC8FF);
-        UiRenderer.roundedRect(g, bx + 13, by + 10, 4, 6, 2, 0xFF167EFF);
-        UiRenderer.roundedRect(g, bx + 16, by + 14, 7, 3, 2, 0xFF167EFF);
-        UiRenderer.roundedRect(g, bx + 20, by + 16, 4, 6, 2, 0xFF167EFF);
-        UiRenderer.roundedRect(g, bx + 14, by + 21, 9, 3, 2, 0xFF73D5FF);
-        g.fill(bx + 2, by + 12, bx + 26, by + 13, 0xCC9AC7FF);
-        g.fill(bx + 4, by + 20, bx + 25, by + 21, 0x996D68FF);
-        UiFont.draw(g, "Spatial Client", panelX + 48, panelY + 14, 0xFFF4F7FF, 0.38F, UiFont.Weight.SEMIBOLD);
-        UiFont.draw(g, "FORGE 1.20.1", panelX + 48, panelY + 28, 0xFF68779A, 0.245F, UiFont.Weight.REGULAR);
+        UiRenderer.roundedOutline(g, bx, by, 30, 30, 10, 1, 0xFF31467A, 0xFF070B1B);
+        g.blit(SPATIAL_LOGO, bx + 1, by + 1, 0.0F, 0.0F, 28, 28, 48, 48);
+        UiFont.draw(g, "Spatial Client", panelX + 49, panelY + 14, 0xFFF4F7FF, 0.38F, UiFont.Weight.SEMIBOLD);
+        UiFont.draw(g, "FORGE 1.20.1", panelX + 49, panelY + 28, 0xFF68779A, 0.245F, UiFont.Weight.REGULAR);
     }
 
     private void drawSpaceBackground(GuiGraphics g, int mouseX, int mouseY) {
