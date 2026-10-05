@@ -5,6 +5,8 @@ import dev.spatialclient.SpatialClient;
 import dev.spatialclient.config.SpatialConfig;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.event.TickEvent;
@@ -33,6 +35,17 @@ public final class ClientEvents {
 
     @Mod.EventBusSubscriber(modid = SpatialClient.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
     public static final class ForgeBus {
+        @SubscribeEvent
+        public static void screenOpening(ScreenEvent.Opening event) {
+            if (!(event.getNewScreen() instanceof TitleScreen)) return;
+            SpatialLocalAccount.init();
+            if (SpatialLocalAccount.isUnlocked()) {
+                event.setNewScreen(new SpatialTitleScreen());
+            } else {
+                event.setNewScreen(new SpatialAccountScreen(new SpatialTitleScreen(), false));
+            }
+        }
+
         @SubscribeEvent
         public static void clientTick(TickEvent.ClientTickEvent event) {
             if (event.phase != TickEvent.Phase.END) return;
