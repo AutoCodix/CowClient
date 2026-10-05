@@ -35,6 +35,7 @@ public final class SpatialMenuScreen extends Screen {
     private String search = "";
 
     private int selectedGroup;
+    private int groupScroll;
     private int rowScroll;
 
     public SpatialMenuScreen() {
@@ -167,31 +168,51 @@ public final class SpatialMenuScreen extends Screen {
 
         UiFont.draw(g, "MODULES", x + 11, y + 10, 0xFF596785, 0.195F, UiFont.Weight.SEMIBOLD);
 
-        int yy = y + 29;
-        for (int i = 0; i < groups.size(); i++) {
+        int itemH = 31;
+        int gap = 5;
+        int startY = y + 29;
+        int capacity = Math.max(1, (h - 37 + gap) / (itemH + gap));
+        int maxScroll = Math.max(0, groups.size() - capacity);
+        groupScroll = Math.max(0, Math.min(groupScroll, maxScroll));
+
+        if (selectedGroup < groupScroll) groupScroll = selectedGroup;
+        if (selectedGroup >= groupScroll + capacity) groupScroll = selectedGroup - capacity + 1;
+
+        for (int i = groupScroll; i < groups.size(); i++) {
+            int slot = i - groupScroll;
+            if (slot >= capacity) break;
+
             String group = groups.get(i);
+            int yy = startY + slot * (itemH + gap);
             boolean selected = i == selectedGroup;
-            boolean hover = inside(mouseX, mouseY, x + 7, yy, w - 14, 31);
+            boolean hover = inside(mouseX, mouseY, x + 7, yy, w - 14, itemH);
 
             if (selected || hover) {
-                UiRenderer.roundedRect(g, x + 7, yy, w - 14, 31, 9,
+                UiRenderer.roundedRect(g, x + 7, yy, w - 14, itemH, 9,
                         selected ? 0xFF1E2947 : 0x8C151D31);
             }
             if (selected) {
-                UiRenderer.roundedRect(g, x + 10, yy + 7, 3, 17, 2, accent);
+                UiRenderer.roundedRect(g, x + 10, yy + 7, 3, itemH - 14, 2, accent);
             }
 
             int enabled = enabledCountForGroup(group);
-            UiFont.draw(g, group, x + 20, yy + 7,
+            UiFont.draw(g, fit(group, w - 52, 0.245F), x + 20, yy + 7,
                     selected ? 0xFFF3F6FF : 0xFFA7B1C8,
                     0.245F, selected ? UiFont.Weight.SEMIBOLD : UiFont.Weight.REGULAR);
 
             String n = Integer.toString(enabled);
             float nw = UiFont.width(n, 0.19F, UiFont.Weight.REGULAR);
             UiFont.draw(g, n, x + w - nw - 16, yy + 9, 0xFF697897, 0.19F, UiFont.Weight.REGULAR);
-            yy += 36;
+        }
 
-            if (yy + 31 > y + h - 8) break;
+        if (maxScroll > 0) {
+            int trackX = x + w - 5;
+            int trackY = startY;
+            int trackH = capacity * (itemH + gap) - gap;
+            UiRenderer.roundedRect(g, trackX, trackY, 2, trackH, 1, 0x55384660);
+            int thumbH = Math.max(16, Math.round(trackH * (capacity / (float)groups.size())));
+            int thumbY = trackY + Math.round((trackH - thumbH) * (groupScroll / (float)maxScroll));
+            UiRenderer.roundedRect(g, trackX, thumbY, 2, thumbH, 1, accent);
         }
     }
 
@@ -326,17 +347,21 @@ public final class SpatialMenuScreen extends Screen {
         int bodyY = panelY + 55;
         int bodyH = panelY + panelH - 14 - bodyY;
 
+        int itemH = 31;
+        int groupGap = 5;
+        int groupCapacity = Math.max(1, (bodyH - 37 + groupGap) / (itemH + groupGap));
         int yy = bodyY + 29;
-        for (int i = 0; i < groups.size(); i++) {
-            if (inside(mouseX, mouseY, contentX + 7, yy, groupW - 14, 31)) {
+        for (int i = groupScroll; i < groups.size(); i++) {
+            int slot = i - groupScroll;
+            if (slot >= groupCapacity) break;
+            int gy = yy + slot * (itemH + groupGap);
+            if (inside(mouseX, mouseY, contentX + 7, gy, groupW - 14, itemH)) {
                 selectedGroup = i;
                 rowScroll = 0;
                 search = "";
                 SpatialMenuTheme.click(1.14F);
                 return true;
             }
-            yy += 36;
-            if (yy + 31 > bodyY + bodyH - 8) break;
         }
 
         int settingsX = contentX + groupW + 10;
@@ -367,9 +392,20 @@ public final class SpatialMenuScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        List<Row> visible = visibleRowsForCurrentGroup();
+        int contentX = panelX + sidebarW + 14;
         int bodyY = panelY + 55;
         int bodyH = panelY + panelH - 14 - bodyY;
+
+        if (inside(mouseX, mouseY, contentX, bodyY, groupW, bodyH)) {
+            int itemH = 31;
+            int gap = 5;
+            int capacity = Math.max(1, (bodyH - 37 + gap) / (itemH + gap));
+            int max = Math.max(0, groups.size() - capacity);
+            groupScroll = Math.max(0, Math.min(max, groupScroll + (delta < 0 ? 1 : -1)));
+            return true;
+        }
+
+        List<Row> visible = visibleRowsForCurrentGroup();
         int rowH = 38;
         int gap = 6;
         int capacity = Math.max(1, (bodyH - 58 + gap) / (rowH + gap));
@@ -429,6 +465,7 @@ public final class SpatialMenuScreen extends Screen {
         search = "";
         searchFocused = false;
         rowScroll = 0;
+        groupScroll = 0;
         selectedGroup = 0;
         SpatialCamera.setSection(s);
         rebuildRows();
