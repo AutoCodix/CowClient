@@ -4,31 +4,37 @@ import dev.spatialclient.config.SpatialConfig;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public final class SpatialMenuScreen extends Screen {
-    private static final ResourceLocation SPATIAL_LOGO = new ResourceLocation("spatialclient", "textures/gui/spatial_logo.png");
     private static final SpatialSection[] MODULE_SECTIONS = {
             SpatialSection.VISUALS, SpatialSection.HUD, SpatialSection.COSMETICS, SpatialSection.CAMERA
     };
 
     private SpatialSection section = SpatialSection.VISUALS;
     private final List<Row> rows = new ArrayList<>();
+    private final List<String> groups = new ArrayList<>();
+
     private int panelX;
     private int panelY;
     private int panelW;
     private int panelH;
     private int sidebarW;
+    private int groupW;
+
     private int searchX;
     private int searchY;
     private int searchW;
     private boolean searchFocused;
     private String search = "";
+
+    private int selectedGroup;
     private int rowScroll;
 
     public SpatialMenuScreen() {
@@ -41,6 +47,7 @@ public final class SpatialMenuScreen extends Screen {
         section = SpatialSection.VISUALS;
         SpatialCamera.setSection(section);
         rebuildRows();
+        rebuildGroups();
     }
 
     @Override
@@ -51,217 +58,239 @@ public final class SpatialMenuScreen extends Screen {
 
         SpatialConfig cfg = SpatialConfig.get();
         int accent = 0xFF000000 | cfg.accentRgb;
-        int radius = cfg.menuRadius;
-        int panelAlpha = Math.round(cfg.menuOpacity / 100.0F * 220.0F);
+        int radius = Math.max(14, cfg.menuRadius);
 
         UiRenderer.shadow(g, panelX, panelY, panelW, panelH, radius);
-        UiRenderer.roundedRect(g, panelX, panelY, panelW, panelH, radius, (panelAlpha << 24) | 0x070B18);
+        UiRenderer.roundedRect(g, panelX, panelY, panelW, panelH, radius, 0xD60A0E1C);
         SpatialMenuTheme.drawPanelSpace(g, panelX + 2, panelY + 2, panelW - 4, panelH - 4, mouseX, mouseY);
-        UiRenderer.roundedOutline(g, panelX, panelY, panelW, panelH, radius, 1, 0xFF27365A, 0x12070B18);
+        UiRenderer.roundedOutline(g, panelX, panelY, panelW, panelH, radius, 1, 0xFF263553, 0x08000000);
 
-        UiRenderer.roundedRect(g, panelX + 1, panelY + 1, sidebarW, panelH - 2, Math.max(9, radius - 1), 0xD9070A16);
-        g.fill(panelX + sidebarW - radius, panelY + 1, panelX + sidebarW + 1, panelY + panelH - 1, 0xD9070A16);
-        g.fill(panelX + sidebarW, panelY + 17, panelX + sidebarW + 1, panelY + panelH - 17, 0x66314367);
+        UiRenderer.roundedRect(g, panelX + 1, panelY + 1, sidebarW, panelH - 2, radius - 1, 0xD8060914);
+        g.fill(panelX + sidebarW - radius, panelY + 1, panelX + sidebarW + 1, panelY + panelH - 1, 0xD8060914);
+        g.fill(panelX + sidebarW, panelY + 17, panelX + sidebarW + 1, panelY + panelH - 17, 0x66334462);
 
-        drawBrand(g, accent);
+        drawBrand(g);
         drawSidebar(g, mouseX, mouseY, accent);
         drawContent(g, mouseX, mouseY, accent);
+
         super.render(g, mouseX, mouseY, partialTick);
     }
 
-    private void drawBrand(GuiGraphics g, int accent) {
+    private void drawBrand(GuiGraphics g) {
         int bx = panelX + 11;
         int by = panelY + 10;
         SpatialMenuTheme.drawLogo(g, bx, by, 38);
-        UiFont.draw(g, "Spatial Client", panelX + 57, panelY + 13, 0xFFF4F7FF, 0.36F, UiFont.Weight.SEMIBOLD);
-        UiFont.draw(g, "FORGE 1.20.1", panelX + 57, panelY + 29, 0xFF6C7A99, 0.215F, UiFont.Weight.REGULAR);
-    }
-
-    private void drawSpaceBackground(GuiGraphics g, int mouseX, int mouseY) {
-        // Kept intentionally empty: the Minecraft world stays visible behind the client.
+        UiFont.draw(g, "SPATIAL", panelX + 57, panelY + 13, 0xFFF5F8FF, 0.36F, UiFont.Weight.SEMIBOLD);
+        UiFont.draw(g, "FORGE 1.20.1", panelX + 57, panelY + 29, 0xFF69799B, 0.205F, UiFont.Weight.REGULAR);
     }
 
     private void drawSidebar(GuiGraphics g, int mouseX, int mouseY, int accent) {
-        int y = panelY + 59;
-        UiFont.draw(g, "MODULES", panelX + 17, y, 0xFF555B78, 0.23F, UiFont.Weight.SEMIBOLD);
-        y += 17;
+        int y = panelY + 62;
+        UiFont.draw(g, "MODULES", panelX + 16, y, 0xFF53617D, 0.205F, UiFont.Weight.SEMIBOLD);
+        y += 16;
 
         for (SpatialSection s : MODULE_SECTIONS) {
             boolean selected = section == s;
-            boolean hover = inside(mouseX, mouseY, panelX + 11, y - 3, sidebarW - 22, 32);
+            boolean hover = inside(mouseX, mouseY, panelX + 10, y - 2, sidebarW - 20, 30);
+
             if (selected || hover) {
-                UiRenderer.roundedRect(g, panelX + 10, y - 4, sidebarW - 20, 32, 8,
-                        selected ? 0xFF282050 : 0xA3151730);
+                UiRenderer.roundedRect(g, panelX + 9, y - 3, sidebarW - 18, 31, 9,
+                        selected ? 0xFF251C48 : 0x9A11192B);
             }
-            if (selected) UiRenderer.roundedRect(g, panelX + 13, y + 6, 3, 12, 2, accent);
-            drawNavIcon(g, panelX + 24, y + 10, s, selected ? accent : 0xFF777E9D);
-            UiFont.draw(g, s.title, panelX + 39, y + 4, selected ? 0xFFF5F3FF : 0xFFA4A8BE,
-                    0.31F, selected ? UiFont.Weight.SEMIBOLD : UiFont.Weight.REGULAR);
-            String count = Integer.toString(countFor(s));
-            float cw = UiFont.width(count, 0.235F, UiFont.Weight.REGULAR);
-            UiFont.draw(g, count, panelX + sidebarW - 19 - cw, y + 6, 0xFF6A6F8A, 0.235F, UiFont.Weight.REGULAR);
-            y += 39;
+            if (selected) UiRenderer.roundedRect(g, panelX + 12, y + 5, 3, 14, 2, accent);
+
+            drawNavIcon(g, panelX + 25, y + 11, s, selected ? accent : 0xFF72809D);
+            UiFont.draw(g, s.title, panelX + 40, y + 5,
+                    selected ? 0xFFF5F7FF : 0xFFA1ACC4,
+                    0.265F, selected ? UiFont.Weight.SEMIBOLD : UiFont.Weight.REGULAR);
+            y += 36;
         }
 
-        y += 8;
-        UiFont.draw(g, "GENERAL", panelX + 17, y, 0xFF555B78, 0.23F, UiFont.Weight.SEMIBOLD);
-        y += 18;
-        boolean selected = section == SpatialSection.SETTINGS;
-        boolean hover = inside(mouseX, mouseY, panelX + 11, y - 3, sidebarW - 22, 32);
-        if (selected || hover) {
-            UiRenderer.roundedRect(g, panelX + 10, y - 4, sidebarW - 20, 32, 8,
-                    selected ? 0xFF282050 : 0xA3151730);
-        }
-        if (selected) UiRenderer.roundedRect(g, panelX + 13, y + 6, 3, 12, 2, accent);
-        drawNavIcon(g, panelX + 24, y + 10, SpatialSection.SETTINGS, selected ? accent : 0xFF777E9D);
-        UiFont.draw(g, "Settings", panelX + 39, y + 4, selected ? 0xFFF5F3FF : 0xFFA4A8BE,
-                0.31F, selected ? UiFont.Weight.SEMIBOLD : UiFont.Weight.REGULAR);
+        y += 7;
+        UiFont.draw(g, "GENERAL", panelX + 16, y, 0xFF53617D, 0.205F, UiFont.Weight.SEMIBOLD);
+        y += 17;
 
-        UiFont.draw(g, "RSHIFT  close", panelX + 17, panelY + panelH - 25, 0xFF555B78, 0.245F, UiFont.Weight.REGULAR);
+        boolean settings = section == SpatialSection.SETTINGS;
+        boolean hover = inside(mouseX, mouseY, panelX + 10, y - 2, sidebarW - 20, 30);
+        if (settings || hover) {
+            UiRenderer.roundedRect(g, panelX + 9, y - 3, sidebarW - 18, 31, 9,
+                    settings ? 0xFF251C48 : 0x9A11192B);
+        }
+        if (settings) UiRenderer.roundedRect(g, panelX + 12, y + 5, 3, 14, 2, accent);
+        drawNavIcon(g, panelX + 25, y + 11, SpatialSection.SETTINGS, settings ? accent : 0xFF72809D);
+        UiFont.draw(g, "Settings", panelX + 40, y + 5,
+                settings ? 0xFFF5F7FF : 0xFFA1ACC4,
+                0.265F, settings ? UiFont.Weight.SEMIBOLD : UiFont.Weight.REGULAR);
+
+        UiFont.draw(g, "RSHIFT  close", panelX + 16, panelY + panelH - 23,
+                0xFF52607D, 0.205F, UiFont.Weight.REGULAR);
     }
 
     private void drawContent(GuiGraphics g, int mouseX, int mouseY, int accent) {
-        int x = panelX + sidebarW + 15;
+        int contentX = panelX + sidebarW + 14;
         int right = panelX + panelW - 14;
-        String title = section == SpatialSection.SETTINGS ? "Settings" : section.title;
-        List<Row> visible = visibleRows();
-        int enabled = 0;
-        for (Row row : visible) if (row.kind == RowKind.TOGGLE && row.active.get()) enabled++;
+        int headerY = panelY + 13;
 
-        UiFont.draw(g, title, x, panelY + 15, 0xFFF4F7FF, 0.44F, UiFont.Weight.SEMIBOLD);
-        String sub = section == SpatialSection.SETTINGS
-                ? "client preferences"
-                : enabled + " enabled  /  " + visible.size() + " total";
-        UiFont.draw(g, sub, x, panelY + 35, 0xFF68779A, 0.225F, UiFont.Weight.REGULAR);
+        UiFont.draw(g, section == SpatialSection.SETTINGS ? "Settings" : section.title,
+                contentX, headerY, 0xFFF5F7FF, 0.43F, UiFont.Weight.SEMIBOLD);
 
-        searchW = Math.min(154, Math.max(118, panelW / 4));
+        String subtitle = section == SpatialSection.SETTINGS
+                ? "Client, configs and appearance"
+                : "Visual-only / client-side";
+        UiFont.draw(g, subtitle, contentX, headerY + 21,
+                0xFF69799A, 0.215F, UiFont.Weight.REGULAR);
+
+        searchW = Math.min(150, Math.max(116, panelW / 4));
         searchX = right - searchW;
         searchY = panelY + 12;
         UiRenderer.roundedOutline(g, searchX, searchY, searchW, 27, 9, 1,
-                searchFocused ? 0xFF5B4DA0 : 0xFF27324E, 0xC9090D1C);
-        UiRenderer.circle(g, searchX + 13, searchY + 13, 4.0F, 0xFF7D8BAA);
-        UiRenderer.circle(g, searchX + 13, searchY + 13, 2.5F, 0xFF090D1C);
-        g.fill(searchX + 16, searchY + 16, searchX + 20, searchY + 18, 0xFF7D8BAA);
-        String searchText = search.isEmpty() ? "Search" : search;
-        int searchColor = search.isEmpty() ? 0xFF687493 : 0xFFE8EEFA;
-        UiFont.draw(g, searchText, searchX + 25, searchY + 7, searchColor, 0.245F, UiFont.Weight.REGULAR);
+                searchFocused ? 0xFF55478E : 0xFF26324D, 0xC9090D1B);
+        UiRenderer.circle(g, searchX + 13, searchY + 13, 4.0F, 0xFF7B88A7);
+        UiRenderer.circle(g, searchX + 13, searchY + 13, 2.4F, 0xFF090D1B);
+        g.fill(searchX + 16, searchY + 16, searchX + 20, searchY + 18, 0xFF7B88A7);
+        UiFont.draw(g, search.isEmpty() ? "Search" : search, searchX + 25, searchY + 7,
+                search.isEmpty() ? 0xFF667391 : 0xFFE8EEF9, 0.225F, UiFont.Weight.REGULAR);
 
-        int infoY = panelY + 55;
-        UiRenderer.roundedRect(g, x, infoY, right - x, 24, 8, 0xA90C1225);
-        UiFont.draw(g, section == SpatialSection.SETTINGS ? "Spatial preferences" : "Visual-only / client-side",
-                x + 10, infoY + 6, 0xFF8290B0, 0.225F, UiFont.Weight.REGULAR);
+        int bodyY = panelY + 55;
+        int bodyH = panelY + panelH - 14 - bodyY;
 
-        int gridY = panelY + 88;
-        int gapX = 8;
-        int gapY = 8;
-        int cardH = 43;
-        int contentW = right - x;
-        int cardW = (contentW - gapX) / 2;
-        int rowsVisible = Math.max(1, (panelY + panelH - 13 - gridY + gapY) / (cardH + gapY));
-        int totalRows = (visible.size() + 1) / 2;
-        int maxScroll = Math.max(0, totalRows - rowsVisible);
+        groupW = Math.min(146, Math.max(126, (right - contentX) / 3));
+        drawGroupRail(g, contentX, bodyY, groupW, bodyH, mouseX, mouseY, accent);
+
+        int settingsX = contentX + groupW + 10;
+        int settingsW = right - settingsX;
+        drawGroupSettings(g, settingsX, bodyY, settingsW, bodyH, mouseX, mouseY, accent);
+    }
+
+    private void drawGroupRail(GuiGraphics g, int x, int y, int w, int h, int mouseX, int mouseY, int accent) {
+        UiRenderer.roundedRect(g, x, y, w, h, 11, 0xA70A1020);
+
+        UiFont.draw(g, "MODULES", x + 11, y + 10, 0xFF596785, 0.195F, UiFont.Weight.SEMIBOLD);
+
+        int yy = y + 29;
+        for (int i = 0; i < groups.size(); i++) {
+            String group = groups.get(i);
+            boolean selected = i == selectedGroup;
+            boolean hover = inside(mouseX, mouseY, x + 7, yy, w - 14, 31);
+
+            if (selected || hover) {
+                UiRenderer.roundedRect(g, x + 7, yy, w - 14, 31, 9,
+                        selected ? 0xFF1E2947 : 0x8C151D31);
+            }
+            if (selected) {
+                UiRenderer.roundedRect(g, x + 10, yy + 7, 3, 17, 2, accent);
+            }
+
+            int enabled = enabledCountForGroup(group);
+            UiFont.draw(g, group, x + 20, yy + 7,
+                    selected ? 0xFFF3F6FF : 0xFFA7B1C8,
+                    0.245F, selected ? UiFont.Weight.SEMIBOLD : UiFont.Weight.REGULAR);
+
+            String n = Integer.toString(enabled);
+            float nw = UiFont.width(n, 0.19F, UiFont.Weight.REGULAR);
+            UiFont.draw(g, n, x + w - nw - 16, yy + 9, 0xFF697897, 0.19F, UiFont.Weight.REGULAR);
+            yy += 36;
+
+            if (yy + 31 > y + h - 8) break;
+        }
+    }
+
+    private void drawGroupSettings(GuiGraphics g, int x, int y, int w, int h, int mouseX, int mouseY, int accent) {
+        UiRenderer.roundedRect(g, x, y, w, h, 11, 0x86080E1D);
+
+        String group = currentGroup();
+        UiFont.draw(g, group, x + 12, y + 10, 0xFFF4F7FF, 0.31F, UiFont.Weight.SEMIBOLD);
+        UiFont.draw(g, groupDescription(group), x + 12, y + 28, 0xFF657492, 0.195F, UiFont.Weight.REGULAR);
+
+        List<Row> visible = visibleRowsForCurrentGroup();
+        int rowH = 38;
+        int gap = 6;
+        int startY = y + 51;
+        int capacity = Math.max(1, (h - 58 + gap) / (rowH + gap));
+        int maxScroll = Math.max(0, visible.size() - capacity);
         rowScroll = Math.max(0, Math.min(rowScroll, maxScroll));
-        int first = rowScroll * 2;
 
         if (visible.isEmpty()) {
-            UiRenderer.roundedOutline(g, x, gridY, contentW, 52, 11, 1, 0xFF26324F, 0xC90A1020);
-            UiFont.draw(g, "No matching modules", x + 13, gridY + 11, 0xFFDCE5F7, 0.29F, UiFont.Weight.SEMIBOLD);
-            UiFont.draw(g, "Try another search.", x + 13, gridY + 29, 0xFF687493, 0.215F, UiFont.Weight.REGULAR);
+            UiRenderer.roundedOutline(g, x + 8, startY, w - 16, 48, 9, 1, 0xFF26324C, 0x9A0A1020);
+            UiFont.draw(g, "No matching settings", x + 19, startY + 10, 0xFFDCE4F5, 0.245F, UiFont.Weight.SEMIBOLD);
+            UiFont.draw(g, "Try another search.", x + 19, startY + 27, 0xFF687593, 0.19F, UiFont.Weight.REGULAR);
             return;
         }
 
-        for (int i = first; i < visible.size(); i++) {
-            int slot = i - first;
-            int col = slot & 1;
-            int rowIndex = slot / 2;
-            if (rowIndex >= rowsVisible) break;
-            int rx = x + col * (cardW + gapX);
-            int ry = gridY + rowIndex * (cardH + gapY);
+        for (int i = rowScroll; i < visible.size(); i++) {
+            int slot = i - rowScroll;
+            if (slot >= capacity) break;
             Row row = visible.get(i);
-            boolean hover = inside(mouseX, mouseY, rx, ry, cardW, cardH);
+            int ry = startY + slot * (rowH + gap);
+            boolean hover = inside(mouseX, mouseY, x + 8, ry, w - 16, rowH);
 
-            if (hover) UiRenderer.roundedRect(g, rx - 2, ry - 2, cardW + 4, cardH + 4, 12, 0x1C416DFF);
-            UiRenderer.roundedOutline(g, rx, ry, cardW, cardH, 10, 1,
-                    hover ? 0xFF3D4F78 : 0xFF25304B,
-                    hover ? 0xDB111A31 : 0xC90B1122);
+            if (hover) {
+                UiRenderer.roundedRect(g, x + 6, ry - 2, w - 12, rowH + 4, 10, 0x173A6EFF);
+            }
+            UiRenderer.roundedOutline(g, x + 8, ry, w - 16, rowH, 9, 1,
+                    hover ? 0xFF3B4B70 : 0xFF25304B,
+                    hover ? 0xD811192E : 0xB80B1121);
 
             int marker = row.kind == RowKind.TOGGLE && row.active.get() ? accent : 0xFF39445F;
-            UiRenderer.roundedRect(g, rx + 8, ry + 8, 3, cardH - 16, 2, marker);
-            UiFont.draw(g, ellipsize(row.name, cardW - 78, 0.275F), rx + 17, ry + 7,
-                    0xFFF0F4FF, 0.275F, UiFont.Weight.SEMIBOLD);
-            UiFont.draw(g, ellipsize(row.description, cardW - 31, 0.19F), rx + 17, ry + 25,
-                    0xFF677492, 0.19F, UiFont.Weight.REGULAR);
+            UiRenderer.roundedRect(g, x + 16, ry + 8, 3, rowH - 16, 2, marker);
+
+            UiFont.draw(g, row.name, x + 27, ry + 7, 0xFFF0F4FF, 0.245F, UiFont.Weight.SEMIBOLD);
+            String desc = fit(row.description, Math.max(60, w - 126), 0.185F);
+            UiFont.draw(g, desc, x + 27, ry + 23, 0xFF65718F, 0.185F, UiFont.Weight.REGULAR);
 
             if (row.kind == RowKind.TOGGLE) {
-                drawToggle(g, rx + cardW - 34, ry + 13, row.active.get(), accent);
+                drawToggle(g, x + w - 43, ry + 11, row.active.get(), accent);
             } else {
-                String value = row.value.get();
-                float vw = UiFont.width(value, 0.205F, UiFont.Weight.SEMIBOLD);
-                float pillW = Math.max(34.0F, Math.min(62.0F, vw + 14.0F));
-                UiRenderer.roundedRect(g, rx + cardW - pillW - 8, ry + 11, pillW, 21, 7, 0xFF17213E);
-                UiFont.draw(g, ellipsize(value, Math.round(pillW - 8), 0.205F),
-                        rx + cardW - pillW - 4, ry + 17, 0xFFD2DCF1, 0.205F, UiFont.Weight.SEMIBOLD);
+                String value = fit(row.value.get(), 60, 0.195F);
+                float vw = UiFont.width(value, 0.195F, UiFont.Weight.SEMIBOLD);
+                float pillW = Math.max(40.0F, Math.min(70.0F, vw + 16.0F));
+                UiRenderer.roundedRect(g, x + w - pillW - 16, ry + 8, pillW, 22, 7, 0xFF18213B);
+                UiFont.draw(g, value, x + w - pillW - 16 + (pillW - vw) * 0.5F,
+                        ry + 14, 0xFFD0DAEF, 0.195F, UiFont.Weight.SEMIBOLD);
             }
         }
 
         if (maxScroll > 0) {
-            int trackX = right - 2;
-            int trackY = gridY;
-            int trackH = rowsVisible * (cardH + gapY) - gapY;
-            UiRenderer.roundedRect(g, trackX, trackY, 2, trackH, 1, 0x5537445F);
-            float fraction = rowsVisible / (float)Math.max(rowsVisible, totalRows);
-            int thumbH = Math.max(18, Math.round(trackH * fraction));
+            int trackY = startY;
+            int trackH = capacity * (rowH + gap) - gap;
+            int trackX = x + w - 5;
+            UiRenderer.roundedRect(g, trackX, trackY, 2, trackH, 1, 0x55384660);
+            int thumbH = Math.max(18, Math.round(trackH * (capacity / (float)visible.size())));
             int thumbY = trackY + Math.round((trackH - thumbH) * (rowScroll / (float)maxScroll));
-            UiRenderer.roundedRect(g, trackX, thumbY, 2, thumbH, 1, 0xFF7258D8);
+            UiRenderer.roundedRect(g, trackX, thumbY, 2, thumbH, 1, accent);
         }
-    }
-
-    private void drawViewButtons(GuiGraphics g, int x, int y, int accent) {
-        UiRenderer.roundedRect(g, x, y, 21, 17, 7, 0xFF27214E);
-        g.fill(x + 6, y + 5, x + 15, y + 7, accent);
-        g.fill(x + 6, y + 9, x + 15, y + 11, 0xFF8E88AC);
-        UiRenderer.roundedRect(g, x + 25, y, 21, 17, 7, 0xFF14172E);
-        UiRenderer.circle(g, x + 31, y + 6, 1.5F, 0xFF777D98);
-        UiRenderer.circle(g, x + 39, y + 6, 1.5F, 0xFF777D98);
-        UiRenderer.circle(g, x + 31, y + 12, 1.5F, 0xFF777D98);
-        UiRenderer.circle(g, x + 39, y + 12, 1.5F, 0xFF777D98);
     }
 
     private void drawNavIcon(GuiGraphics g, int cx, int cy, SpatialSection s, int color) {
         switch (s) {
             case VISUALS -> {
-                UiRenderer.circle(g, cx, cy + 1, 5, color);
-                UiRenderer.circle(g, cx, cy + 1, 2.7F, 0xFF0A0C1D);
+                UiRenderer.circle(g, cx, cy, 4.5F, color);
+                UiRenderer.circle(g, cx, cy, 2.2F, 0xFF080C18);
             }
             case HUD -> {
                 UiRenderer.roundedRect(g, cx - 5, cy - 4, 10, 8, 2, color);
-                UiRenderer.roundedRect(g, cx - 3, cy - 2, 6, 4, 1, 0xFF0A0C1D);
+                UiRenderer.roundedRect(g, cx - 3, cy - 2, 6, 4, 1, 0xFF080C18);
             }
             case COSMETICS -> {
-                UiRenderer.circle(g, cx, cy - 1, 4.2F, color);
+                UiRenderer.circle(g, cx, cy - 1, 4.0F, color);
                 UiRenderer.roundedRect(g, cx - 5, cy + 4, 10, 2, 1, color);
             }
             case CAMERA -> {
                 UiRenderer.roundedRect(g, cx - 5, cy - 4, 10, 8, 2, color);
-                UiRenderer.circle(g, cx, cy, 2.2F, 0xFF0A0C1D);
+                UiRenderer.circle(g, cx, cy, 2.0F, 0xFF080C18);
             }
             case SETTINGS -> {
                 UiRenderer.circle(g, cx, cy, 5, color);
-                UiRenderer.circle(g, cx, cy, 2.1F, 0xFF0A0C1D);
+                UiRenderer.circle(g, cx, cy, 2, 0xFF080C18);
             }
             default -> UiRenderer.circle(g, cx, cy, 4, color);
         }
     }
 
-    private void drawChevron(GuiGraphics g, int x, int y, int color) {
-        g.fill(x, y - 3, x + 2, y + 1, color);
-        g.fill(x + 2, y - 1, x + 4, y + 3, color);
-    }
-
     private void drawToggle(GuiGraphics g, int x, int y, boolean on, int accent) {
-        UiRenderer.roundedRect(g, x, y, 25, 15, 8, on ? 0xFF3A2F72 : 0xFF24283F);
-        UiRenderer.circle(g, on ? x + 17.5F : x + 7.5F, y + 7.5F, 5.0F, on ? 0xFFF3EFFF : 0xFF9A9FB5);
-        if (on) UiRenderer.roundedRect(g, x + 3, y + 5.5F, 8, 4, 2, accent);
+        UiRenderer.roundedRect(g, x, y, 27, 16, 8, on ? 0xFF3A2D69 : 0xFF242B3E);
+        UiRenderer.circle(g, on ? x + 19.0F : x + 8.0F, y + 8.0F, 5.2F, on ? 0xFFF4F0FF : 0xFF9BA5B9);
+        if (on) UiRenderer.roundedRect(g, x + 3, y + 5.5F, 9, 5, 2, accent);
     }
 
     @Override
@@ -276,63 +305,75 @@ public final class SpatialMenuScreen extends Screen {
         }
         searchFocused = false;
 
-        int y = panelY + 76;
+        int y = panelY + 78;
         for (SpatialSection s : MODULE_SECTIONS) {
-            if (inside(mouseX, mouseY, panelX + 10, y - 4, sidebarW - 20, 32)) {
+            if (inside(mouseX, mouseY, panelX + 9, y - 3, sidebarW - 18, 31)) {
                 SpatialMenuTheme.click(1.10F);
                 switchSection(s);
                 return true;
             }
-            y += 39;
+            y += 36;
         }
-        y += 26;
-        if (inside(mouseX, mouseY, panelX + 10, y - 4, sidebarW - 20, 32)) {
+        y += 24;
+        if (inside(mouseX, mouseY, panelX + 9, y - 3, sidebarW - 18, 31)) {
             SpatialMenuTheme.click(1.10F);
             switchSection(SpatialSection.SETTINGS);
             return true;
         }
 
-        int x = panelX + sidebarW + 15;
+        int contentX = panelX + sidebarW + 14;
         int right = panelX + panelW - 14;
-        int gridY = panelY + 88;
-        int gapX = 8;
-        int gapY = 8;
-        int cardH = 43;
-        int contentW = right - x;
-        int cardW = (contentW - gapX) / 2;
+        int bodyY = panelY + 55;
+        int bodyH = panelY + panelH - 14 - bodyY;
 
-        List<Row> visible = visibleRows();
-        int rowsVisible = Math.max(1, (panelY + panelH - 13 - gridY + gapY) / (cardH + gapY));
-        int first = rowScroll * 2;
-        for (int i = first; i < visible.size(); i++) {
-            int slot = i - first;
-            int col = slot & 1;
-            int rowIndex = slot / 2;
-            if (rowIndex >= rowsVisible) break;
-            int rx = x + col * (cardW + gapX);
-            int ry = gridY + rowIndex * (cardH + gapY);
-            if (inside(mouseX, mouseY, rx, ry, cardW, cardH)) {
-                SpatialMenuTheme.click(visible.get(i).kind == RowKind.TOGGLE ? 1.17F : 1.05F);
-                visible.get(i).action.run();
+        int yy = bodyY + 29;
+        for (int i = 0; i < groups.size(); i++) {
+            if (inside(mouseX, mouseY, contentX + 7, yy, groupW - 14, 31)) {
+                selectedGroup = i;
+                rowScroll = 0;
+                search = "";
+                SpatialMenuTheme.click(1.14F);
+                return true;
+            }
+            yy += 36;
+            if (yy + 31 > bodyY + bodyH - 8) break;
+        }
+
+        int settingsX = contentX + groupW + 10;
+        int settingsW = right - settingsX;
+        int startY = bodyY + 51;
+        int rowH = 38;
+        int gap = 6;
+        List<Row> visible = visibleRowsForCurrentGroup();
+        int capacity = Math.max(1, (bodyH - 58 + gap) / (rowH + gap));
+
+        for (int i = rowScroll; i < visible.size(); i++) {
+            int slot = i - rowScroll;
+            if (slot >= capacity) break;
+            int ry = startY + slot * (rowH + gap);
+            if (inside(mouseX, mouseY, settingsX + 8, ry, settingsW - 16, rowH)) {
+                Row row = visible.get(i);
+                SpatialMenuTheme.click(row.kind == RowKind.TOGGLE ? 1.17F : 1.04F);
+                row.action.run();
                 SpatialConfig.get().save();
                 rebuildRows();
+                rebuildGroups();
                 return true;
             }
         }
+
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        List<Row> visible = visibleRows();
-        int x = panelX + sidebarW + 15;
-        int right = panelX + panelW - 14;
-        int gridY = panelY + 88;
-        int cardH = 43;
-        int gapY = 8;
-        int rowsVisible = Math.max(1, (panelY + panelH - 13 - gridY + gapY) / (cardH + gapY));
-        int totalRows = (visible.size() + 1) / 2;
-        int max = Math.max(0, totalRows - rowsVisible);
+        List<Row> visible = visibleRowsForCurrentGroup();
+        int bodyY = panelY + 55;
+        int bodyH = panelY + panelH - 14 - bodyY;
+        int rowH = 38;
+        int gap = 6;
+        int capacity = Math.max(1, (bodyH - 58 + gap) / (rowH + gap));
+        int max = Math.max(0, visible.size() - capacity);
         rowScroll = Math.max(0, Math.min(max, rowScroll + (delta < 0 ? 1 : -1)));
         return true;
     }
@@ -388,32 +429,124 @@ public final class SpatialMenuScreen extends Screen {
         search = "";
         searchFocused = false;
         rowScroll = 0;
+        selectedGroup = 0;
         SpatialCamera.setSection(s);
         rebuildRows();
+        rebuildGroups();
     }
 
     private void layout() {
         float scale = SpatialConfig.get().menuScale;
-        int baseW = Math.min(590, Math.max(500, width * 46 / 100));
-        int baseH = Math.min(356, Math.max(318, height - 210));
-        panelW = Math.min(width - 36, Math.round(baseW * scale));
-        panelH = Math.min(height - 64, Math.round(baseH * scale));
-        sidebarW = Math.min(122, Math.max(106, panelW / 5));
 
-        // Keep the player visible: the client floats to the right of center instead of covering the whole view.
-        int preferredX = width / 2 + Math.max(52, width / 22);
+        int baseW = Math.min(670, Math.max(590, width * 43 / 100));
+        int baseH = Math.min(360, Math.max(324, height - 215));
+
+        panelW = Math.min(width - 42, Math.round(baseW * scale));
+        panelH = Math.min(height - 72, Math.round(baseH * scale));
+        sidebarW = Math.min(118, Math.max(106, panelW / 6));
+
+        int preferredX = width / 2 + Math.max(45, width / 30);
         panelX = Math.min(width - panelW - 18, Math.max(18, preferredX));
-        panelY = Math.min(height - panelH - 24, Math.max(42, (height - panelH) / 2 + 18));
+        panelY = Math.min(height - panelH - 24, Math.max(38, (height - panelH) / 2 + 12));
     }
 
-    private List<Row> visibleRows() {
-        if (search.isBlank()) return new ArrayList<>(rows);
-        String q = search.toLowerCase(Locale.ROOT);
+    private void rebuildGroups() {
+        String previous = currentGroup();
+        groups.clear();
+
+        Map<String, Boolean> seen = new LinkedHashMap<>();
+        for (Row row : rows) seen.put(groupFor(row.name), Boolean.TRUE);
+        groups.addAll(seen.keySet());
+
+        if (groups.isEmpty()) groups.add("General");
+        int oldIndex = groups.indexOf(previous);
+        selectedGroup = oldIndex >= 0 ? oldIndex : Math.min(selectedGroup, groups.size() - 1);
+        selectedGroup = Math.max(0, selectedGroup);
+    }
+
+    private String currentGroup() {
+        if (groups.isEmpty()) return "General";
+        return groups.get(Math.max(0, Math.min(selectedGroup, groups.size() - 1)));
+    }
+
+    private int enabledCountForGroup(String group) {
+        int count = 0;
+        for (Row row : rows) {
+            if (!groupFor(row.name).equals(group)) continue;
+            if (row.kind == RowKind.TOGGLE && row.active.get()) count++;
+        }
+        return count;
+    }
+
+    private List<Row> visibleRowsForCurrentGroup() {
+        String group = currentGroup();
+        String q = search.toLowerCase(Locale.ROOT).trim();
         List<Row> out = new ArrayList<>();
         for (Row row : rows) {
-            if (row.name.toLowerCase(Locale.ROOT).contains(q) || row.description.toLowerCase(Locale.ROOT).contains(q)) out.add(row);
+            if (!groupFor(row.name).equals(group)) continue;
+            if (q.isEmpty()
+                    || row.name.toLowerCase(Locale.ROOT).contains(q)
+                    || row.description.toLowerCase(Locale.ROOT).contains(q)
+                    || row.value.get().toLowerCase(Locale.ROOT).contains(q)) {
+                out.add(row);
+            }
         }
         return out;
+    }
+
+    private String groupFor(String name) {
+        if (section == SpatialSection.VISUALS) return "Crosshair";
+        if (section == SpatialSection.CAMERA) return "Camera";
+        if (section == SpatialSection.COSMETICS) {
+            return name.startsWith("Aura") || name.equals("Player Aura") ? "Aura" : "Halo";
+        }
+        if (section == SpatialSection.SETTINGS) {
+            if (name.contains("Config") || name.contains("Skin") || name.contains("Account")) return "Tools";
+            return "Client";
+        }
+
+        if (name.startsWith("FPS")) return "FPS";
+        if (name.startsWith("Ping")) return "Ping";
+        if (name.startsWith("Coordinates") || name.startsWith("Decimal")) return "Coordinates";
+        if (name.startsWith("Keystrokes") || name.startsWith("Mouse Buttons")) return "Keystrokes";
+        if (name.startsWith("Armor")) return "Armor";
+        if (name.startsWith("Effect")) return "Effects";
+        if (name.startsWith("CPS")) return "CPS";
+        if (name.startsWith("Inventory")) return "Inventory";
+        if (name.startsWith("Clock") || name.startsWith("Session") || name.startsWith("Biome")
+                || name.startsWith("Direction") || name.startsWith("Memory") || name.startsWith("Held")
+                || name.startsWith("Info")) return "Info";
+        return "Appearance";
+    }
+
+    private String groupDescription(String group) {
+        return switch (group) {
+            case "Crosshair" -> "Shape, color and readability";
+            case "FPS" -> "Frame-rate widget";
+            case "Ping" -> "Latency widget";
+            case "Coordinates" -> "Position widget";
+            case "Keystrokes" -> "Keyboard and mouse input";
+            case "Armor" -> "Equipped gear display";
+            case "Effects" -> "Potion/status list";
+            case "CPS" -> "Click-rate display";
+            case "Inventory" -> "Hotbar inventory strip";
+            case "Info" -> "Clock, biome, memory and session";
+            case "Appearance" -> "Watermark and screen styling";
+            case "Aura" -> "Player-local animated rings";
+            case "Halo" -> "Player-local head halo";
+            case "Camera" -> "Orbit, follow and parallax";
+            case "Tools" -> "Configs, account and skin studio";
+            default -> "Spatial client preferences";
+        };
+    }
+
+    private static String fit(String text, int maxWidth, float scale) {
+        if (text == null) return "";
+        if (UiFont.width(text, scale, UiFont.Weight.REGULAR) <= maxWidth) return text;
+        String suffix = "...";
+        int end = text.length();
+        while (end > 0 && UiFont.width(text.substring(0, end) + suffix, scale, UiFont.Weight.REGULAR) > maxWidth) end--;
+        return end <= 0 ? suffix : text.substring(0, end) + suffix;
     }
 
     private void rebuildRows() {
