@@ -25,20 +25,22 @@ public final class CowScreen extends Screen {
     private record Hit(int x,int y,int w,int h,Runnable click,Runnable right) {
         boolean contains(double mx,double my){return mx>=x&&mx<x+w&&my>=y&&my<y+h;}
     }
-    public CowScreen(){super(Component.literal("CowClient modules"));}
+    public CowScreen(){super(Component.literal("Spatial Client"));}
     @Override public boolean isPauseScreen(){return false;}
     private void button(Graphics2D g,String label,int x,int y,int w,int h,Runnable click) {
         boolean hot=hover==hits.size()||focus==hits.size();
-        Theme.box(g,x,y,w,h,12,hot?new Color(0x35432b):new Color(0x252e20));
+        Theme.box(g,x,y,w,h,12,hot?new Color(0x18264a):new Color(0x101a33));
         Theme.text(g,label,x+15,y+(h-18)/2,15,Theme.INK,true);
         hits.add(new Hit(x,y,w,h,click,click));
     }
     private void changed(){CowClient.config.revision++;CowClient.config.save();}
     private void paint(Graphics2D g) {
         hits.clear();
-        Theme.box(g,0,0,W,H,24,Theme.BG);
-        Theme.box(g,0,0,212,H,24,new Color(0x191f16));
-        Theme.cow(g,20,20,64);Theme.text(g,"cowclient",83,33,24,Theme.INK,true);
+        Theme.starfield(g,W,H,0,0);
+        Theme.box(g,0,0,W,H,24,new Color(5,8,20,218));
+        Theme.box(g,0,0,212,H,24,new Color(4,7,18,232));
+        Theme.spatial(g,20,20,54);Theme.text(g,"Spatial",83,29,25,Theme.INK,true);
+        Theme.text(g,"VISUAL CLIENT",84,58,10,Theme.MUTED,true);
         Theme.text(g,"MAKE IT YOURS",26,116,11,Theme.MUTED,true);
         int y=156;
         for(String c:List.of("All","HUD","Visual","Utility")) {
@@ -46,16 +48,16 @@ public final class CowScreen extends Screen {
             button(g,c.equals("All")?"All modules":c,18,y,175,46,()->{category=selected;query="";scroll=0;detail="";focus=-1;});
             if(category.equals(c)) Theme.box(g,22,y+13,4,20,2,Theme.ACCENT);y+=58;
         }
-        Theme.text(g,"YOUR PROFILE",26,446,11,Theme.MUTED,true);
+        Theme.text(g,"LOCAL CONFIG",26,446,11,Theme.MUTED,true);
         button(g,CowClient.config.profile+"  ›",18,476,175,44,()->{
             var cfg=CowClient.config;cfg.save();cfg.load(Config.PROFILES.get((Config.PROFILES.indexOf(cfg.profile)+1)%3));
             CowClient.sprintLatched=false;
         });
         button(g,"Arrange HUD",18,534,175,44,()->{if(minecraft.player!=null)minecraft.setScreen(new HudEditor());});
         button(g,"Close",18,604,175,44,this::onClose);
-        Theme.text(g,"Modules",244,33,31,Theme.INK,true);
-        Theme.text(g,"The little things that make it yours.",246,80,15,Theme.MUTED,false);
-        Theme.box(g,685,33,367,44,13,searchFocused?new Color(0x303b28):new Color(0x252e20));
+        Theme.text(g,"Spatial Modules",244,33,31,Theme.INK,true);
+        Theme.text(g,"Clean visual tools, local customization and smooth HUD polish.",246,80,15,Theme.MUTED,false);
+        Theme.box(g,685,33,367,44,13,searchFocused?new Color(0x18284d):new Color(0x101a33));
         Theme.text(g,query.isEmpty()?"Search modules…":query,701,45,16,query.isEmpty()?Theme.MUTED:Theme.INK,false);
         hits.add(new Hit(685,33,367,44,()->{searchFocused=true;detail="";},()->{query="";scroll=0;}));
         if(!detail.isEmpty()) {paintDetail(g);return;}
@@ -65,10 +67,10 @@ public final class CowScreen extends Screen {
             Module m=modules.get(n);int i=n-scroll*3;
             int x=244+(i%3)*273,cy=142+(i/3)*205;
             boolean hot=hover==hits.size()||focus==hits.size();
-            Theme.box(g,x,cy,258,188,16,hot?new Color(0x2e3827):Theme.CARD);
+            Theme.box(g,x,cy,258,188,16,hot?new Color(0x162344):Theme.CARD);
             Theme.text(g,m.name(),x+18,cy+18,20,Theme.INK,true);
             Theme.text(g,m.description(),x+18,cy+51,11,Theme.MUTED,false);
-            Theme.box(g,x+16,cy+83,226,58,10,new Color(0x151b12));
+            Theme.box(g,x+16,cy+83,226,58,10,new Color(0x080d1d));
             Theme.text(g,m.preview(),x+27,cy+102,15,Theme.ACCENT,true);
             boolean enabled=CowClient.active(m.id());
             Theme.text(g,enabled?"Enabled":"Disabled",x+18,cy+158,12,Theme.MUTED,false);
@@ -82,7 +84,7 @@ public final class CowScreen extends Screen {
         button(g,CowClient.config.data.blur?"Blur on":"Blur off",686,575,118,38,()->{CowClient.config.data.blur=!CowClient.config.data.blur;changed();});
         button(g,"HUD −",816,575,112,38,()->{CowClient.config.data.hudScale=Math.max(.65,CowClient.config.data.hudScale-.1);changed();});
         button(g,"HUD +",940,575,112,38,()->{CowClient.config.data.hudScale=Math.min(1.75,CowClient.config.data.hudScale+.1);changed();});
-        Theme.text(g,CowClient.config.error.isEmpty()?"Right-click for settings · Tab / Enter to navigate · Scroll for more":CowClient.config.error,246,643,12,Theme.MUTED,false);
+        Theme.text(g,CowClient.config.error.isEmpty()?"RSHIFT close · Right-click settings · Tab / Enter navigate · Scroll for more":CowClient.config.error,246,643,12,Theme.MUTED,false);
     }
     private void paintDetail(Graphics2D g) {
         Module m=Modules.ALL.stream().filter(a->a.id().equals(detail)).findFirst().orElseThrow();
@@ -103,7 +105,7 @@ public final class CowScreen extends Screen {
     }
     @Override public void renderBackground(GuiGraphics g,int mx,int my,float delta) {
         if(CowClient.config.data.blur) super.renderBackground(g,mx,my,delta);
-        else g.fill(0,0,width,height,0x88101310);
+        else g.fill(0,0,width,height,0x8801040d);
     }
     @Override public void render(GuiGraphics g,int mx,int my,float delta) {
         double elapsed=(System.nanoTime()-opened)/1e9;
