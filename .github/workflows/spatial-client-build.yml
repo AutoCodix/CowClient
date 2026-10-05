@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - spatial-forge-1.20.1-build
+      - spatial-major-polish-staging
   workflow_dispatch:
 
 jobs:
@@ -34,8 +35,6 @@ jobs:
           mkdir -p SpatialClientProject/src/main/java/dev/spatialclient/config
           cp spatial_refine/src/dev/spatialclient/config/SpatialConfig.java SpatialClientProject/src/main/java/dev/spatialclient/config/SpatialConfig.java
           mkdir -p SpatialClientProject/src/main/resources/assets/spatialclient/textures/gui
-          cp spatial_refine/ui_font_regular.png SpatialClientProject/src/main/resources/assets/spatialclient/textures/gui/ui_font_regular.png
-          cp spatial_refine/ui_font_semibold.png SpatialClientProject/src/main/resources/assets/spatialclient/textures/gui/ui_font_semibold.png
 
       - name: Build
         working-directory: SpatialClientProject
@@ -50,13 +49,15 @@ jobs:
           jar tf "$JAR" | grep -q 'dev/spatialclient/client/UiFont.class'
           jar tf "$JAR" | grep -q 'dev/spatialclient/client/UiRenderer.class'
           jar tf "$JAR" | grep -q 'dev/spatialclient/client/AuraRenderer.class'
-          jar tf "$JAR" | grep -q 'assets/spatialclient/textures/gui/ui_font_regular.png'
-          jar tf "$JAR" | grep -q 'assets/spatialclient/textures/gui/ui_font_semibold.png'
+          jar tf "$JAR" | grep -q 'dev/spatialclient/client/SpatialAccountScreen.class'
+          jar tf "$JAR" | grep -q 'dev/spatialclient/client/SpatialProfilesScreen.class'
+          jar tf "$JAR" | grep -q 'dev/spatialclient/client/SkinEditorScreen.class'
+          jar tf "$JAR" | grep -q 'dev/spatialclient/client/InputStats.class'
           echo "$JAR"
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
-          name: SpatialClient-Forge-1.20.1-Floating-UI
+          name: SpatialClient-Forge-1.20.1-Major-Polish
           path: SpatialClientProject/build/libs/*.jar
           if-no-files-found: error
