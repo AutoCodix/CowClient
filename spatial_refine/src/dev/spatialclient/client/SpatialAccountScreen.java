@@ -1,59 +1,60 @@
 package dev.spatialclient.client;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.util.FormattedCharSequence;
 import org.lwjgl.glfw.GLFW;
 
 public final class SpatialAccountScreen extends Screen {
+    private final Screen nextScreen;
+    private final boolean openMenuAfter;
+
     private EditBox username;
     private EditBox password;
     private boolean registerMode;
     private boolean remember = true;
     private String status = "";
 
+    private int cardX, cardY, cardW, cardH;
+    private int formX, formW;
+
     public SpatialAccountScreen() {
+        this(null, true);
+    }
+
+    public SpatialAccountScreen(Screen nextScreen, boolean openMenuAfter) {
         super(Component.literal("Spatial Client"));
+        this.nextScreen = nextScreen;
+        this.openMenuAfter = openMenuAfter;
         SpatialLocalAccount.init();
         registerMode = !SpatialLocalAccount.hasAccount();
     }
 
     @Override
     protected void init() {
-        int cardW = Math.min(390, width - 36);
-        int left = (width - cardW) / 2;
-        int top = Math.max(54, height / 2 - 145);
+        cardW = Math.min(680, width - 42);
+        cardH = Math.min(390, height - 52);
+        cardX = (width - cardW) / 2;
+        cardY = Math.max(26, (height - cardH) / 2);
 
-        username = new EditBox(font, left + 36, top + 92, cardW - 72, 24, Component.literal("Username"));
+        int artW = Math.min(250, cardW / 2 - 24);
+        formX = cardX + artW + 38;
+        formW = cardX + cardW - 30 - formX;
+
+        username = new EditBox(font, formX + 2, cardY + 136, formW - 4, 26, Component.literal("Username"));
+        username.setBordered(false);
         username.setMaxLength(20);
         if (!registerMode && SpatialLocalAccount.hasAccount()) username.setValue(SpatialLocalAccount.username());
         addRenderableWidget(username);
 
-        password = new EditBox(font, left + 36, top + 134, cardW - 72, 24, Component.literal("Password"));
+        password = new EditBox(font, formX + 2, cardY + 194, formW - 4, 26, Component.literal("Password"));
+        password.setBordered(false);
         password.setMaxLength(64);
+        password.setFormatter((value, index) -> FormattedCharSequence.forward("•".repeat(value.length()), Style.EMPTY));
         addRenderableWidget(password);
-
-        addRenderableWidget(Button.builder(Component.literal(remember ? "Remember this device: ON" : "Remember this device: OFF"), b -> {
-            remember = !remember;
-            b.setMessage(Component.literal(remember ? "Remember this device: ON" : "Remember this device: OFF"));
-        }).bounds(left + 36, top + 174, cardW - 72, 22).build());
-
-        addRenderableWidget(Button.builder(Component.literal(registerMode ? "Create local profile" : "Sign in"), b -> submit())
-                .bounds(left + 36, top + 208, cardW - 72, 26).build());
-
-        addRenderableWidget(Button.builder(Component.literal(registerMode ? "I already have a profile" : "Create a new local profile"), b -> {
-            if (SpatialLocalAccount.hasAccount()) {
-                registerMode = false;
-                username.setValue(SpatialLocalAccount.username());
-                status = "";
-            } else {
-                registerMode = true;
-                username.setValue("");
-                status = "";
-            }
-        }).bounds(left + 36, top + 242, cardW - 72, 22).build());
 
         setInitialFocus(registerMode ? username : password);
     }
@@ -64,63 +65,134 @@ public final class SpatialAccountScreen extends Screen {
                 : SpatialLocalAccount.login(username.getValue(), password.getValue(), remember);
         status = result.message();
         password.setValue("");
-        if (result.ok()) openSpatial();
+        if (result.ok()) {
+            SpatialMenuTheme.click(1.08F);
+            continueAfterLogin();
+        }
     }
 
-    private void openSpatial() {
-        if (minecraft == null || minecraft.player == null || minecraft.level == null) return;
-        SpatialCamera.open();
-        if (SpatialCamera.isMenuCameraActive()) minecraft.setScreen(new SpatialMenuScreen());
+    private void continueAfterLogin() {
+        if (minecraft == null) return;
+        if (nextScreen != null) {
+            minecraft.setScreen(nextScreen);
+            return;
+        }
+        if (openMenuAfter && minecraft.player != null && minecraft.level != null) {
+            SpatialCamera.open();
+            if (SpatialCamera.isMenuCameraActive()) minecraft.setScreen(new SpatialMenuScreen());
+            return;
+        }
+        minecraft.setScreen(new SpatialTitleScreen());
     }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        drawSpace(g);
+        SpatialMenuTheme.drawSpace(g, width, height, mouseX, mouseY);
 
-        int cardW = Math.min(390, width - 36);
-        int cardH = 300;
-        int left = (width - cardW) / 2;
-        int top = Math.max(54, height / 2 - 145);
+        int artW = Math.min(250, cardW / 2 - 24);
         int accent = 0xFF000000 | dev.spatialclient.config.SpatialConfig.get().accentRgb;
 
-        UiRenderer.shadow(g, left, top, cardW, cardH, 18);
-        UiRenderer.roundedOutline(g, left, top, cardW, cardH, 18, 1, 0xFF2A315A, 0xEE080B18);
-        UiRenderer.roundedRect(g, left + 18, top + 18, 42, 42, 13, 0xFF101735);
-        UiRenderer.circle(g, left + 39, top + 39, 10.5F, accent);
-        UiRenderer.circle(g, left + 39, top + 39, 6.0F, 0xFF080B18);
+        UiRenderer.shadow(g, cardX, cardY, cardW, cardH, 22);
+        UiRenderer.roundedOutline(g, cardX, cardY, cardW, cardH, 22, 1, 0xFF273B68, 0xF2070B18);
 
-        UiFont.draw(g, registerMode ? "Create Spatial profile" : "Welcome back", left + 74, top + 20,
-                0xFFF4F6FF, 0.48F, UiFont.Weight.SEMIBOLD);
-        UiFont.draw(g, "Local profile only - credentials never leave this device.", left + 74, top + 43,
-                0xFF7781A3, 0.235F, UiFont.Weight.REGULAR);
+        // left visual panel
+        UiRenderer.roundedRect(g, cardX + 12, cardY + 12, artW - 6, cardH - 24, 18, 0xFF080E20);
+        for (int i = 0; i < 30; i++) {
+            int sx = cardX + 22 + Math.floorMod(i * 71, Math.max(1, artW - 36));
+            int sy = cardY + 24 + Math.floorMod(i * 47, Math.max(1, cardH - 52));
+            int col = i % 7 == 0 ? 0xFF9D86FF : (i % 5 == 0 ? 0xFF73BFFF : 0xFF334766);
+            g.fill(sx, sy, sx + (i % 11 == 0 ? 2 : 1), sy + (i % 11 == 0 ? 2 : 1), col);
+        }
 
-        UiFont.draw(g, "USERNAME", left + 36, top + 78, 0xFF69718F, 0.22F, UiFont.Weight.SEMIBOLD);
-        UiFont.draw(g, "PASSWORD", left + 36, top + 120, 0xFF69718F, 0.22F, UiFont.Weight.SEMIBOLD);
+        int logo = Math.min(112, artW - 70);
+        SpatialMenuTheme.drawLogo(g, cardX + artW / 2 - logo / 2 + 4, cardY + 56, logo);
+        String brand = "SPATIAL";
+        float brandW = UiFont.width(brand, 0.56F, UiFont.Weight.SEMIBOLD);
+        UiFont.draw(g, brand, cardX + artW / 2.0F - brandW / 2.0F + 4, cardY + 182,
+                0xFFF7F9FF, 0.56F, UiFont.Weight.SEMIBOLD);
+        UiFont.draw(g, "LOCAL PROFILE", cardX + 33, cardY + 218, 0xFF6C7B9C, 0.22F, UiFont.Weight.SEMIBOLD);
+        UiFont.draw(g, "Your Spatial settings, configs and", cardX + 33, cardY + 244, 0xFF8A96B5, 0.235F, UiFont.Weight.REGULAR);
+        UiFont.draw(g, "skin studio stay on this device.", cardX + 33, cardY + 260, 0xFF8A96B5, 0.235F, UiFont.Weight.REGULAR);
+        UiFont.draw(g, "PBKDF2 password hash / no cloud account", cardX + 33, cardY + cardH - 43,
+                0xFF526281, 0.19F, UiFont.Weight.REGULAR);
+
+        // right form
+        UiFont.draw(g, registerMode ? "Create your Spatial profile" : "Welcome back", formX, cardY + 38,
+                0xFFF5F7FF, 0.54F, UiFont.Weight.SEMIBOLD);
+        UiFont.draw(g, registerMode
+                        ? "One local profile. Remembering is optional."
+                        : "Unlock your local Spatial profile to continue.",
+                formX, cardY + 67, 0xFF7988AA, 0.235F, UiFont.Weight.REGULAR);
+
+        UiFont.draw(g, "USERNAME", formX, cardY + 112, 0xFF697A9E, 0.215F, UiFont.Weight.SEMIBOLD);
+        drawField(g, formX, cardY + 130, formW, 38, username.isFocused(), accent);
+
+        UiFont.draw(g, "PASSWORD", formX, cardY + 170, 0xFF697A9E, 0.215F, UiFont.Weight.SEMIBOLD);
+        drawField(g, formX, cardY + 188, formW, 38, password.isFocused(), accent);
+
+        int rememberY = cardY + 240;
+        boolean rememberHover = inside(mouseX, mouseY, formX, rememberY, formW, 26);
+        UiRenderer.roundedRect(g, formX, rememberY, formW, 26, 9, rememberHover ? 0xFF111A31 : 0xFF0C1326);
+        UiRenderer.roundedOutline(g, formX + 7, rememberY + 6, 14, 14, 5, 1, remember ? accent : 0xFF34405F, 0xFF0A1020);
+        if (remember) UiRenderer.roundedRect(g, formX + 10, rememberY + 9, 8, 8, 3, accent);
+        UiFont.draw(g, "Remember this device", formX + 30, rememberY + 7, 0xFFC9D2E8, 0.24F, UiFont.Weight.REGULAR);
+
+        int primaryY = cardY + 282;
+        boolean primaryHover = inside(mouseX, mouseY, formX, primaryY, formW, 38);
+        if (primaryHover) UiRenderer.roundedRect(g, formX - 3, primaryY - 3, formW + 6, 44, 13, 0x222A70FF);
+        UiRenderer.roundedOutline(g, formX, primaryY, formW, 38, 11, 1,
+                primaryHover ? 0xFF5B6FD5 : 0xFF384980,
+                primaryHover ? 0xFF182347 : 0xFF111A34);
+        String primary = registerMode ? "Create local profile" : "Sign in";
+        float pw = UiFont.width(primary, 0.30F, UiFont.Weight.SEMIBOLD);
+        UiFont.draw(g, primary, formX + (formW - pw) / 2.0F, primaryY + 11, 0xFFF5F7FF, 0.30F, UiFont.Weight.SEMIBOLD);
+
+        int switchY = cardY + 330;
+        String switchText = registerMode ? "Already have a profile? Sign in" : "Need a new profile? Register";
+        float sw = UiFont.width(switchText, 0.225F, UiFont.Weight.REGULAR);
+        UiFont.draw(g, switchText, formX + (formW - sw) / 2.0F, switchY,
+                inside(mouseX, mouseY, formX, switchY - 4, formW, 20) ? 0xFFB7C9FF : 0xFF7180A2,
+                0.225F, UiFont.Weight.REGULAR);
 
         if (!status.isBlank()) {
-            UiRenderer.roundedRect(g, left + 36, top + 272, cardW - 72, 18, 7, 0x99212A48);
-            UiFont.draw(g, status, left + 45, top + 276, status.toLowerCase().contains("incorrect") ? 0xFFFF9AA8 : 0xFFAFC6FF,
-                    0.22F, UiFont.Weight.REGULAR);
+            int statusColor = status.toLowerCase().contains("incorrect") || status.toLowerCase().contains("must")
+                    ? 0xFFFF9AA8 : 0xFFAFC6FF;
+            UiFont.draw(g, status, formX, cardY + cardH - 24, statusColor, 0.215F, UiFont.Weight.REGULAR);
         }
 
         super.render(g, mouseX, mouseY, partialTick);
     }
 
-    private void drawSpace(GuiGraphics g) {
-        g.fill(0, 0, width, height, 0xFF02040D);
-        int[][] stars = {
-                {7, 12}, {16, 27}, {28, 9}, {36, 22}, {49, 14}, {61, 31}, {73, 11}, {87, 23}, {95, 7},
-                {12, 62}, {24, 48}, {39, 71}, {52, 57}, {66, 83}, {79, 52}, {91, 69}, {5, 88},
-                {31, 91}, {58, 96}, {82, 92}
-        };
-        for (int i = 0; i < stars.length; i++) {
-            int x = stars[i][0] * width / 100;
-            int y = stars[i][1] * height / 100;
-            int c = (i % 5 == 0) ? 0xFF8CB7FF : (i % 7 == 0 ? 0xFFB69CFF : 0xFF60709B);
-            g.fill(x, y, x + (i % 6 == 0 ? 2 : 1), y + (i % 6 == 0 ? 2 : 1), c);
+    private void drawField(GuiGraphics g, int x, int y, int w, int h, boolean focused, int accent) {
+        UiRenderer.roundedOutline(g, x, y, w, h, 10, 1,
+                focused ? accent : 0xFF2A3657,
+                focused ? 0xFF0E1730 : 0xFF0A1122);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            int rememberY = cardY + 240;
+            int primaryY = cardY + 282;
+            int switchY = cardY + 330;
+            if (inside(mouseX, mouseY, formX, rememberY, formW, 26)) {
+                remember = !remember;
+                SpatialMenuTheme.click(1.15F);
+                return true;
+            }
+            if (inside(mouseX, mouseY, formX, primaryY, formW, 38)) {
+                submit();
+                return true;
+            }
+            if (inside(mouseX, mouseY, formX, switchY - 4, formW, 20)) {
+                registerMode = !registerMode;
+                status = "";
+                if (!registerMode && SpatialLocalAccount.hasAccount()) username.setValue(SpatialLocalAccount.username());
+                SpatialMenuTheme.click(1.22F);
+                return true;
+            }
         }
-        g.fill(0, 0, width, height / 4, 0x22123A74);
-        g.fill(0, height * 3 / 4, width, height, 0x221B0D45);
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
@@ -137,7 +209,23 @@ public final class SpatialAccountScreen extends Screen {
     }
 
     @Override
+    public void onClose() {
+        if (minecraft == null) return;
+        if (nextScreen != null) minecraft.setScreen(nextScreen);
+        else minecraft.setScreen(null);
+    }
+
+    @Override
+    public void renderBackground(GuiGraphics g) {
+        // handled in render()
+    }
+
+    @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    private static boolean inside(double mx, double my, double x, double y, double w, double h) {
+        return mx >= x && mx <= x + w && my >= y && my <= y + h;
     }
 }
