@@ -48,19 +48,20 @@ public final class SpatialMenuScreen extends Screen {
         SpatialCamera.setMouse(mouseX, mouseY, width, height);
         HeadTracking.updateMouse(mouseX, mouseY, width, height);
         layout();
-        drawSpaceBackground(g, mouseX, mouseY);
 
         SpatialConfig cfg = SpatialConfig.get();
         int accent = 0xFF000000 | cfg.accentRgb;
         int radius = cfg.menuRadius;
-        int panelAlpha = Math.round(cfg.menuOpacity / 100.0F * 218.0F);
-        int sideAlpha = Math.round(cfg.menuOpacity / 100.0F * 228.0F);
-        UiRenderer.shadow(g, panelX, panelY, panelW, panelH, radius);
-        UiRenderer.roundedRect(g, panelX, panelY, panelW, panelH, radius, (panelAlpha << 24) | 0x0D0F23);
+        int panelAlpha = Math.round(cfg.menuOpacity / 100.0F * 220.0F);
 
-        UiRenderer.roundedRect(g, panelX + 1, panelY + 1, sidebarW, panelH - 2, Math.max(7, radius - 1), (sideAlpha << 24) | 0x070919);
-        g.fill(panelX + sidebarW - radius, panelY + 1, panelX + sidebarW + 1, panelY + panelH - 1, (sideAlpha << 24) | 0x070919);
-        g.fill(panelX + sidebarW, panelY + 16, panelX + sidebarW + 1, panelY + panelH - 16, 0x55262A48);
+        UiRenderer.shadow(g, panelX, panelY, panelW, panelH, radius);
+        UiRenderer.roundedRect(g, panelX, panelY, panelW, panelH, radius, (panelAlpha << 24) | 0x070B18);
+        SpatialMenuTheme.drawPanelSpace(g, panelX + 2, panelY + 2, panelW - 4, panelH - 4, mouseX, mouseY);
+        UiRenderer.roundedOutline(g, panelX, panelY, panelW, panelH, radius, 1, 0xFF27365A, 0x12070B18);
+
+        UiRenderer.roundedRect(g, panelX + 1, panelY + 1, sidebarW, panelH - 2, Math.max(9, radius - 1), 0xD9070A16);
+        g.fill(panelX + sidebarW - radius, panelY + 1, panelX + sidebarW + 1, panelY + panelH - 1, 0xD9070A16);
+        g.fill(panelX + sidebarW, panelY + 17, panelX + sidebarW + 1, panelY + panelH - 17, 0x66314367);
 
         drawBrand(g, accent);
         drawSidebar(g, mouseX, mouseY, accent);
@@ -69,29 +70,15 @@ public final class SpatialMenuScreen extends Screen {
     }
 
     private void drawBrand(GuiGraphics g, int accent) {
-        int bx = panelX + 13;
-        int by = panelY + 12;
-        UiRenderer.roundedOutline(g, bx, by, 30, 30, 10, 1, 0xFF31467A, 0xFF070B1B);
-        g.blit(SPATIAL_LOGO, bx + 1, by + 1, 0.0F, 0.0F, 28, 28, 48, 48);
-        UiFont.draw(g, "Spatial Client", panelX + 49, panelY + 14, 0xFFF4F7FF, 0.38F, UiFont.Weight.SEMIBOLD);
-        UiFont.draw(g, "FORGE 1.20.1", panelX + 49, panelY + 28, 0xFF68779A, 0.245F, UiFont.Weight.REGULAR);
+        int bx = panelX + 11;
+        int by = panelY + 10;
+        SpatialMenuTheme.drawLogo(g, bx, by, 38);
+        UiFont.draw(g, "Spatial Client", panelX + 57, panelY + 13, 0xFFF4F7FF, 0.36F, UiFont.Weight.SEMIBOLD);
+        UiFont.draw(g, "FORGE 1.20.1", panelX + 57, panelY + 29, 0xFF6C7A99, 0.215F, UiFont.Weight.REGULAR);
     }
 
     private void drawSpaceBackground(GuiGraphics g, int mouseX, int mouseY) {
-        g.fill(0, 0, width, height, 0xFF01040D);
-        float nx = width <= 0 ? 0.0F : (mouseX / (float) width - 0.5F);
-        float ny = height <= 0 ? 0.0F : (mouseY / (float) height - 0.5F);
-        int driftX = Math.round(nx * 7.0F);
-        int driftY = Math.round(ny * 4.0F);
-        for (int i = 0; i < 86; i++) {
-            int x = Math.floorMod(i * 173 + 47 + driftX * (1 + i % 3), Math.max(1, width));
-            int y = Math.floorMod(i * 97 + 31 + driftY * (1 + i % 2), Math.max(1, height));
-            int size = i % 17 == 0 ? 2 : 1;
-            int color = i % 13 == 0 ? 0xFFB8D8FF : (i % 9 == 0 ? 0xFF8B78FF : 0xFF40577F);
-            g.fill(x, y, x + size, y + size, color);
-        }
-        g.fill(0, 0, width, Math.max(1, height / 7), 0x18113A75);
-        g.fill(0, Math.max(0, height * 5 / 6), width, height, 0x18180B3A);
+        // Kept intentionally empty: the Minecraft world stays visible behind the client.
     }
 
     private void drawSidebar(GuiGraphics g, int mouseX, int mouseY, int accent) {
@@ -134,72 +121,98 @@ public final class SpatialMenuScreen extends Screen {
     }
 
     private void drawContent(GuiGraphics g, int mouseX, int mouseY, int accent) {
-        int x = panelX + sidebarW + 18;
-        int right = panelX + panelW - 17;
-        String title = section == SpatialSection.SETTINGS ? "Settings" : section.title + " Modules";
+        int x = panelX + sidebarW + 15;
+        int right = panelX + panelW - 14;
+        String title = section == SpatialSection.SETTINGS ? "Settings" : section.title;
         List<Row> visible = visibleRows();
         int enabled = 0;
         for (Row row : visible) if (row.kind == RowKind.TOGGLE && row.active.get()) enabled++;
 
-        UiFont.draw(g, title, x, panelY + 17, 0xFFF4F2FF, 0.48F, UiFont.Weight.SEMIBOLD);
-        String sub = visible.size() + (visible.size() == 1 ? " module" : " modules") + (section == SpatialSection.SETTINGS ? "" : "  /  " + enabled + " enabled");
-        UiFont.draw(g, sub, x, panelY + 38, 0xFF676D8B, 0.255F, UiFont.Weight.REGULAR);
+        UiFont.draw(g, title, x, panelY + 15, 0xFFF4F7FF, 0.44F, UiFont.Weight.SEMIBOLD);
+        String sub = section == SpatialSection.SETTINGS
+                ? "client preferences"
+                : enabled + " enabled  /  " + visible.size() + " total";
+        UiFont.draw(g, sub, x, panelY + 35, 0xFF68779A, 0.225F, UiFont.Weight.REGULAR);
 
-        searchW = Math.min(184, Math.max(126, panelW / 4));
+        searchW = Math.min(154, Math.max(118, panelW / 4));
         searchX = right - searchW;
-        searchY = panelY + 15;
-        UiRenderer.roundedOutline(g, searchX, searchY, searchW, 28, 8, 1,
-                searchFocused ? 0xFF41347A : 0xFF20243D, 0xFF0A0C1D);
-        UiRenderer.circle(g, searchX + 13, searchY + 13, 4.0F, 0xFF7A809B);
-        UiRenderer.circle(g, searchX + 13, searchY + 13, 2.6F, 0xFF0A0C1D);
-        g.fill(searchX + 16, searchY + 16, searchX + 20, searchY + 18, 0xFF7A809B);
-        String searchText = search.isEmpty() ? "Search modules" : search;
-        int searchColor = search.isEmpty() ? 0xFF6F7591 : 0xFFE7E4F4;
-        UiFont.draw(g, searchText, searchX + 25, searchY + 7, searchColor, 0.265F, UiFont.Weight.REGULAR);
+        searchY = panelY + 12;
+        UiRenderer.roundedOutline(g, searchX, searchY, searchW, 27, 9, 1,
+                searchFocused ? 0xFF5B4DA0 : 0xFF27324E, 0xC9090D1C);
+        UiRenderer.circle(g, searchX + 13, searchY + 13, 4.0F, 0xFF7D8BAA);
+        UiRenderer.circle(g, searchX + 13, searchY + 13, 2.5F, 0xFF090D1C);
+        g.fill(searchX + 16, searchY + 16, searchX + 20, searchY + 18, 0xFF7D8BAA);
+        String searchText = search.isEmpty() ? "Search" : search;
+        int searchColor = search.isEmpty() ? 0xFF687493 : 0xFFE8EEFA;
+        UiFont.draw(g, searchText, searchX + 25, searchY + 7, searchColor, 0.245F, UiFont.Weight.REGULAR);
 
-        int headerY = panelY + 61;
-        UiRenderer.roundedRect(g, x, headerY, right - x, 27, 7, 0xFF101329);
-        UiFont.draw(g, section == SpatialSection.SETTINGS ? "Client preferences" : "Visual-only / client-side",
-                x + 12, headerY + 7, 0xFF858AA5, 0.25F, UiFont.Weight.REGULAR);
-        drawViewButtons(g, right - 52, headerY + 5, accent);
+        int infoY = panelY + 55;
+        UiRenderer.roundedRect(g, x, infoY, right - x, 24, 8, 0xA90C1225);
+        UiFont.draw(g, section == SpatialSection.SETTINGS ? "Spatial preferences" : "Visual-only / client-side",
+                x + 10, infoY + 6, 0xFF8290B0, 0.225F, UiFont.Weight.REGULAR);
 
-        int y = panelY + 98;
+        int gridY = panelY + 88;
+        int gapX = 8;
+        int gapY = 8;
+        int cardH = 43;
+        int contentW = right - x;
+        int cardW = (contentW - gapX) / 2;
+        int rowsVisible = Math.max(1, (panelY + panelH - 13 - gridY + gapY) / (cardH + gapY));
+        int totalRows = (visible.size() + 1) / 2;
+        int maxScroll = Math.max(0, totalRows - rowsVisible);
+        rowScroll = Math.max(0, Math.min(rowScroll, maxScroll));
+        int first = rowScroll * 2;
+
         if (visible.isEmpty()) {
-            UiRenderer.roundedRect(g, x, y, right - x, 48, 9, 0xFF11142B);
-            UiFont.draw(g, "No matching modules", x + 13, y + 12, 0xFFC9C6D8, 0.31F, UiFont.Weight.SEMIBOLD);
-            UiFont.draw(g, "Try a different search.", x + 13, y + 28, 0xFF686E89, 0.245F, UiFont.Weight.REGULAR);
+            UiRenderer.roundedOutline(g, x, gridY, contentW, 52, 11, 1, 0xFF26324F, 0xC90A1020);
+            UiFont.draw(g, "No matching modules", x + 13, gridY + 11, 0xFFDCE5F7, 0.29F, UiFont.Weight.SEMIBOLD);
+            UiFont.draw(g, "Try another search.", x + 13, gridY + 29, 0xFF687493, 0.215F, UiFont.Weight.REGULAR);
             return;
         }
 
-        int rowH = 47;
-        int gap = 7;
-        int capacity = Math.max(1, (panelY + panelH - 14 - y) / (rowH + gap));
-        int maxScroll = Math.max(0, visible.size() - capacity);
-        rowScroll = Math.max(0, Math.min(rowScroll, maxScroll));
-        int first = rowScroll;
         for (int i = first; i < visible.size(); i++) {
+            int slot = i - first;
+            int col = slot & 1;
+            int rowIndex = slot / 2;
+            if (rowIndex >= rowsVisible) break;
+            int rx = x + col * (cardW + gapX);
+            int ry = gridY + rowIndex * (cardH + gapY);
             Row row = visible.get(i);
-            int ry = y + (i - first) * (rowH + gap);
-            if (ry + rowH > panelY + panelH - 14) break;
-            boolean hover = inside(mouseX, mouseY, x, ry, right - x, rowH);
-            UiRenderer.roundedOutline(g, x, ry, right - x, rowH, 9, 1,
-                    hover ? 0xFF262A49 : 0xFF1B1E38,
-                    hover ? 0xFF14172E : 0xFF11142A);
-            UiFont.draw(g, row.name, x + 13, ry + 9, 0xFFF0EDF8, 0.305F, UiFont.Weight.SEMIBOLD);
-            UiFont.draw(g, row.description, x + 13, ry + 26, 0xFF676D87, 0.235F, UiFont.Weight.REGULAR);
+            boolean hover = inside(mouseX, mouseY, rx, ry, cardW, cardH);
+
+            if (hover) UiRenderer.roundedRect(g, rx - 2, ry - 2, cardW + 4, cardH + 4, 12, 0x1C416DFF);
+            UiRenderer.roundedOutline(g, rx, ry, cardW, cardH, 10, 1,
+                    hover ? 0xFF3D4F78 : 0xFF25304B,
+                    hover ? 0xDB111A31 : 0xC90B1122);
+
+            int marker = row.kind == RowKind.TOGGLE && row.active.get() ? accent : 0xFF39445F;
+            UiRenderer.roundedRect(g, rx + 8, ry + 8, 3, cardH - 16, 2, marker);
+            UiFont.draw(g, ellipsize(row.name, cardW - 78, 0.275F), rx + 17, ry + 7,
+                    0xFFF0F4FF, 0.275F, UiFont.Weight.SEMIBOLD);
+            UiFont.draw(g, ellipsize(row.description, cardW - 31, 0.19F), rx + 17, ry + 25,
+                    0xFF677492, 0.19F, UiFont.Weight.REGULAR);
 
             if (row.kind == RowKind.TOGGLE) {
-                drawChevron(g, right - 53, ry + 20, 0xFF7D839F);
-                drawToggle(g, right - 35, ry + 15, row.active.get(), accent);
+                drawToggle(g, rx + cardW - 34, ry + 13, row.active.get(), accent);
             } else {
                 String value = row.value.get();
-                float vw = UiFont.width(value, 0.235F, UiFont.Weight.SEMIBOLD);
-                float pillW = Math.max(42.0F, vw + 18.0F);
-                UiRenderer.roundedRect(g, right - pillW - 12, ry + 12, pillW, 23, 7, 0xFF1C2040);
-                UiFont.draw(g, value, right - pillW - 12 + (pillW - vw) * 0.5F, ry + 18,
-                        0xFFCFC8F0, 0.235F, UiFont.Weight.SEMIBOLD);
-                drawChevron(g, Math.round(right - pillW - 25), ry + 20, 0xFF7D839F);
+                float vw = UiFont.width(value, 0.205F, UiFont.Weight.SEMIBOLD);
+                float pillW = Math.max(34.0F, Math.min(62.0F, vw + 14.0F));
+                UiRenderer.roundedRect(g, rx + cardW - pillW - 8, ry + 11, pillW, 21, 7, 0xFF17213E);
+                UiFont.draw(g, ellipsize(value, Math.round(pillW - 8), 0.205F),
+                        rx + cardW - pillW - 4, ry + 17, 0xFFD2DCF1, 0.205F, UiFont.Weight.SEMIBOLD);
             }
+        }
+
+        if (maxScroll > 0) {
+            int trackX = right - 2;
+            int trackY = gridY;
+            int trackH = rowsVisible * (cardH + gapY) - gapY;
+            UiRenderer.roundedRect(g, trackX, trackY, 2, trackH, 1, 0x5537445F);
+            float fraction = rowsVisible / (float)Math.max(rowsVisible, totalRows);
+            int thumbH = Math.max(18, Math.round(trackH * fraction));
+            int thumbY = trackY + Math.round((trackH - thumbH) * (rowScroll / (float)maxScroll));
+            UiRenderer.roundedRect(g, trackX, thumbY, 2, thumbH, 1, 0xFF7258D8);
         }
     }
 
@@ -256,8 +269,9 @@ public final class SpatialMenuScreen extends Screen {
         if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
         layout();
 
-        if (inside(mouseX, mouseY, searchX, searchY, searchW, 28)) {
+        if (inside(mouseX, mouseY, searchX, searchY, searchW, 27)) {
             searchFocused = true;
+            SpatialMenuTheme.click(1.18F);
             return true;
         }
         searchFocused = false;
@@ -265,6 +279,7 @@ public final class SpatialMenuScreen extends Screen {
         int y = panelY + 76;
         for (SpatialSection s : MODULE_SECTIONS) {
             if (inside(mouseX, mouseY, panelX + 10, y - 4, sidebarW - 20, 32)) {
+                SpatialMenuTheme.click(1.10F);
                 switchSection(s);
                 return true;
             }
@@ -272,22 +287,32 @@ public final class SpatialMenuScreen extends Screen {
         }
         y += 26;
         if (inside(mouseX, mouseY, panelX + 10, y - 4, sidebarW - 20, 32)) {
+            SpatialMenuTheme.click(1.10F);
             switchSection(SpatialSection.SETTINGS);
             return true;
         }
 
-        int x = panelX + sidebarW + 18;
-        int right = panelX + panelW - 17;
-        int ry = panelY + 98;
-        int rowH = 47;
-        int gap = 7;
+        int x = panelX + sidebarW + 15;
+        int right = panelX + panelW - 14;
+        int gridY = panelY + 88;
+        int gapX = 8;
+        int gapY = 8;
+        int cardH = 43;
+        int contentW = right - x;
+        int cardW = (contentW - gapX) / 2;
+
         List<Row> visible = visibleRows();
-        int capacity = Math.max(1, (panelY + panelH - 14 - ry) / (rowH + gap));
-        int first = Math.min(rowScroll, Math.max(0, visible.size() - capacity));
+        int rowsVisible = Math.max(1, (panelY + panelH - 13 - gridY + gapY) / (cardH + gapY));
+        int first = rowScroll * 2;
         for (int i = first; i < visible.size(); i++) {
-            int yy = ry + (i - first) * (rowH + gap);
-            if (yy + rowH > panelY + panelH - 14) break;
-            if (inside(mouseX, mouseY, x, yy, right - x, rowH)) {
+            int slot = i - first;
+            int col = slot & 1;
+            int rowIndex = slot / 2;
+            if (rowIndex >= rowsVisible) break;
+            int rx = x + col * (cardW + gapX);
+            int ry = gridY + rowIndex * (cardH + gapY);
+            if (inside(mouseX, mouseY, rx, ry, cardW, cardH)) {
+                SpatialMenuTheme.click(visible.get(i).kind == RowKind.TOGGLE ? 1.17F : 1.05F);
                 visible.get(i).action.run();
                 SpatialConfig.get().save();
                 rebuildRows();
@@ -300,11 +325,14 @@ public final class SpatialMenuScreen extends Screen {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         List<Row> visible = visibleRows();
-        int rowH = 47;
-        int gap = 7;
-        int y = panelY + 98;
-        int capacity = Math.max(1, (panelY + panelH - 14 - y) / (rowH + gap));
-        int max = Math.max(0, visible.size() - capacity);
+        int x = panelX + sidebarW + 15;
+        int right = panelX + panelW - 14;
+        int gridY = panelY + 88;
+        int cardH = 43;
+        int gapY = 8;
+        int rowsVisible = Math.max(1, (panelY + panelH - 13 - gridY + gapY) / (cardH + gapY));
+        int totalRows = (visible.size() + 1) / 2;
+        int max = Math.max(0, totalRows - rowsVisible);
         rowScroll = Math.max(0, Math.min(max, rowScroll + (delta < 0 ? 1 : -1)));
         return true;
     }
@@ -366,15 +394,16 @@ public final class SpatialMenuScreen extends Screen {
 
     private void layout() {
         float scale = SpatialConfig.get().menuScale;
-        int baseW = Math.min(620, Math.max(470, width / 2));
-        int baseH = Math.min(380, Math.max(315, height - 150));
-        panelW = Math.min(width - 32, Math.round(baseW * scale));
-        panelH = Math.min(height - 56, Math.round(baseH * scale));
-        sidebarW = Math.min(136, Math.max(116, panelW / 5));
-        int playerSide = width / 2;
-        int preferredX = playerSide + Math.max(42, width / 18);
+        int baseW = Math.min(590, Math.max(500, width * 46 / 100));
+        int baseH = Math.min(356, Math.max(318, height - 210));
+        panelW = Math.min(width - 36, Math.round(baseW * scale));
+        panelH = Math.min(height - 64, Math.round(baseH * scale));
+        sidebarW = Math.min(122, Math.max(106, panelW / 5));
+
+        // Keep the player visible: the client floats to the right of center instead of covering the whole view.
+        int preferredX = width / 2 + Math.max(52, width / 22);
         panelX = Math.min(width - panelW - 18, Math.max(18, preferredX));
-        panelY = Math.min(height - panelH - 22, Math.max(38, (height - panelH) / 2 + Math.max(34, height / 16)));
+        panelY = Math.min(height - panelH - 24, Math.max(42, (height - panelH) / 2 + 18));
     }
 
     private List<Row> visibleRows() {
@@ -532,6 +561,15 @@ public final class SpatialMenuScreen extends Screen {
             case SETTINGS -> 8;
             default -> 0;
         };
+    }
+
+    private static String ellipsize(String text, int maxWidth, float scale) {
+        if (text == null) return "";
+        if (UiFont.width(text, scale, UiFont.Weight.REGULAR) <= maxWidth) return text;
+        String suffix = "...";
+        int end = text.length();
+        while (end > 0 && UiFont.width(text.substring(0, end) + suffix, scale, UiFont.Weight.REGULAR) > maxWidth) end--;
+        return end <= 0 ? suffix : text.substring(0, end) + suffix;
     }
 
     private static String pretty(String s) {
