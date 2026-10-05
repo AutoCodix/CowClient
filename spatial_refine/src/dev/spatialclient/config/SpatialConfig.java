@@ -69,6 +69,31 @@ public final class SpatialConfig {
     public boolean effectsDuration = true;
     public EffectSort effectsSort = EffectSort.DURATION;
 
+    public boolean cpsHud = true;
+    public float cpsScale = 0.95F;
+    public float cpsOpacity = 0.72F;
+    public HudCorner cpsCorner = HudCorner.TOP_LEFT;
+    public boolean cpsAccentBar = true;
+
+    public boolean clockHud = false;
+    public boolean sessionHud = false;
+    public boolean biomeHud = false;
+    public boolean directionHud = false;
+    public boolean memoryHud = false;
+    public boolean durabilityHud = false;
+    public HudCorner infoCorner = HudCorner.TOP_RIGHT;
+    public float infoScale = 0.90F;
+    public float infoOpacity = 0.68F;
+
+    public boolean inventoryHud = false;
+    public float inventoryScale = 0.85F;
+    public float inventoryOpacity = 0.68F;
+
+    public boolean watermarkHud = true;
+    public boolean vignette = false;
+    public int vignetteStrength = 28;
+    public boolean toggleNotifications = true;
+
     public boolean aura = true;
     public AuraStyle auraStyle = AuraStyle.ORBIT;
     public int auraIntensity = 2;
@@ -133,6 +158,26 @@ public final class SpatialConfig {
         instance.sanitize();
     }
 
+    public static String snapshotJson() {
+        SpatialConfig cfg = get();
+        cfg.sanitize();
+        return GSON.toJson(cfg);
+    }
+
+    public static boolean applyJson(String json) {
+        if (json == null || json.isBlank()) return false;
+        try {
+            SpatialConfig read = GSON.fromJson(json, SpatialConfig.class);
+            if (read == null) return false;
+            read.sanitize();
+            instance = read;
+            instance.save();
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
     public void save() {
         sanitize();
         try {
@@ -158,16 +203,24 @@ public final class SpatialConfig {
         keystrokesScale = clamp(keystrokesScale, 0.70F, 1.55F);
         armorScale = clamp(armorScale, 0.70F, 1.55F);
         effectsScale = clamp(effectsScale, 0.70F, 1.55F);
+        cpsScale = clamp(cpsScale, 0.70F, 1.55F);
+        infoScale = clamp(infoScale, 0.70F, 1.55F);
+        inventoryScale = clamp(inventoryScale, 0.60F, 1.40F);
         fpsOpacity = clamp(fpsOpacity, 0.20F, 1.0F);
         pingOpacity = clamp(pingOpacity, 0.20F, 1.0F);
         coordinatesOpacity = clamp(coordinatesOpacity, 0.20F, 1.0F);
         keystrokesOpacity = clamp(keystrokesOpacity, 0.20F, 1.0F);
         effectsOpacity = clamp(effectsOpacity, 0.20F, 1.0F);
+        cpsOpacity = clamp(cpsOpacity, 0.20F, 1.0F);
+        infoOpacity = clamp(infoOpacity, 0.20F, 1.0F);
+        inventoryOpacity = clamp(inventoryOpacity, 0.20F, 1.0F);
         if (fpsCorner == null) fpsCorner = HudCorner.TOP_LEFT;
         if (pingCorner == null) pingCorner = HudCorner.TOP_LEFT;
         if (coordinatesCorner == null) coordinatesCorner = HudCorner.TOP_LEFT;
         if (keystrokesCorner == null) keystrokesCorner = HudCorner.BOTTOM_LEFT;
         if (effectsCorner == null) effectsCorner = HudCorner.TOP_RIGHT;
+        if (cpsCorner == null) cpsCorner = HudCorner.TOP_LEFT;
+        if (infoCorner == null) infoCorner = HudCorner.TOP_RIGHT;
         if (armorAnchor == null) armorAnchor = ArmorAnchor.ABOVE_HOTBAR;
         if (effectsSort == null) effectsSort = EffectSort.DURATION;
 
@@ -204,6 +257,7 @@ public final class SpatialConfig {
         menuOpacity = clamp(menuOpacity, 45, 95);
         menuScale = clamp(menuScale, 0.72F, 1.00F);
         menuRadius = clamp(menuRadius, 8, 20);
+        vignetteStrength = clamp(vignetteStrength, 5, 80);
     }
 
     private static int clamp(int value, int min, int max) {
