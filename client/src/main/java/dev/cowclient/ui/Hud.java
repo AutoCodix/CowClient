@@ -69,6 +69,24 @@ public final class Hud {
             case "session" -> {long s=Math.max(0,(now-CowClient.worldStarted)/1000);yield String.format(Locale.ROOT,"%02d:%02d:%02d",s/3600,s/60%60,s%60);}
             case "memory" -> {Runtime r=Runtime.getRuntime();yield (r.totalMemory()-r.freeMemory())/1048576+" / "+r.maxMemory()/1048576+" MB";}
             case "clock" -> LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
+            case "biome" -> p.level().getBiome(p.blockPosition()).unwrapKey().map(k->{
+                String raw=k.location().getPath().replace('_',' ');
+                StringBuilder out=new StringBuilder();
+                for(String word:raw.split(" ")) {
+                    if(word.isBlank()) continue;
+                    if(out.length()>0) out.append(' ');
+                    out.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+                }
+                return out.toString();
+            }).orElse("Unknown");
+            case "durability" -> {
+                var stack=p.getMainHandItem();
+                if(stack.isEmpty()) yield "No item";
+                if(!stack.isDamageableItem()) yield stack.getHoverName().getString();
+                int left=Math.max(0,stack.getMaxDamage()-stack.getDamageValue());
+                yield left+" / "+stack.getMaxDamage();
+            }
+            case "watermark" -> "SPATIAL";
             case "keys" -> (mc.options.keyUp.isDown()?"[W]":" W ")+" "+(mc.options.keyLeft.isDown()?"[A]":" A ")+" "+(mc.options.keyDown.isDown()?"[S]":" S ")+" "+(mc.options.keyRight.isDown()?"[D]":" D ");
             case "armor" -> {
                 StringBuilder s=new StringBuilder();String[] labels={"H","C","L","B"};int i=0;
