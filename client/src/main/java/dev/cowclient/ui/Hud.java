@@ -70,7 +70,9 @@ public final class Hud {
             case "memory" -> {Runtime r=Runtime.getRuntime();yield (r.totalMemory()-r.freeMemory())/1048576+" / "+r.maxMemory()/1048576+" MB";}
             case "clock" -> LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
             case "biome" -> p.level().getBiome(p.blockPosition()).unwrapKey().map(k->{
-                String raw=k.location().getPath().replace('_',' ');
+                String raw=k.toString().replace('_',' ');
+                int colon=raw.lastIndexOf(':'); if(colon>=0) raw=raw.substring(colon+1);
+                raw=raw.replace(']',' ').replace('[',' ').trim();
                 StringBuilder out=new StringBuilder();
                 for(String word:raw.split(" ")) {
                     if(word.isBlank()) continue;
