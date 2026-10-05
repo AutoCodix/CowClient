@@ -1,10 +1,18 @@
 package dev.cowclient.ui;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
 
 public final class Theme {
     public static final Color BG=new Color(0x050814),CARD=new Color(0x0d1328),INK=new Color(0xf3f6ff),MUTED=new Color(0x7f8caf),ACCENT=new Color(0x4fa8ff);
     private static final Font base=new Font("SansSerif",Font.PLAIN,16);
+    private static BufferedImage logo;
+    static {
+        try(var in=Theme.class.getResourceAsStream("/assets/cowclient/spatial_logo.png")) {
+            if(in!=null) logo=ImageIO.read(in);
+        } catch(Exception ignored) {}
+    }
 
     private Theme() {}
 
@@ -17,20 +25,17 @@ public final class Theme {
     public static void spatial(Graphics2D g,int x,int y,int size) {
         int s=Math.max(28,size);
         box(g,x,y,s,s,12,new Color(0x071023));
-        g.setColor(new Color(0x243a73));g.drawOval(x+2,y+s/3,s-4,s/3);
+        if(logo!=null) {
+            Object old=g.getRenderingHint(RenderingHints.KEY_INTERPOLATION);
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.drawImage(logo,x+2,y+2,s-4,s-4,null);
+            if(old!=null) g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,old);
+            return;
+        }
         g.setColor(new Color(0x8d63ff));g.fillOval(x+5,y+8,s/3,s/3);
-        g.setColor(new Color(0xe7ddff));g.fillOval(x+9,y+12,Math.max(4,s/6),Math.max(4,s/6));
-        g.setStroke(new BasicStroke(Math.max(2,s/14f),BasicStroke.CAP_ROUND,BasicStroke.JOIN_ROUND));
-        g.setColor(new Color(0x39a7ff));
-        int sx=x+s/2+1;
-        int sy=y+7;
-        g.drawLine(sx,sy,x+s-7,sy);
-        g.drawLine(sx,sy,sx-3,y+s/2);
-        g.drawLine(sx-3,y+s/2,x+s-8,y+s/2);
-        g.drawLine(x+s-8,y+s/2,x+s-8,y+s-9);
-        g.drawLine(x+s-8,y+s-9,sx-1,y+s-9);
-        g.setStroke(new BasicStroke(1f));
+        g.setColor(new Color(0x39a7ff));g.drawString("S",x+s/2,y+s-7);
     }
+
     public static void starfield(Graphics2D g,int w,int h,int driftX,int driftY) {
         g.setColor(BG);g.fillRect(0,0,w,h);
         for(int i=0;i<110;i++) {
