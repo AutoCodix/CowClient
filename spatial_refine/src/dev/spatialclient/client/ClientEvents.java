@@ -6,6 +6,7 @@ import dev.spatialclient.config.SpatialConfig;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
@@ -71,6 +72,25 @@ public final class ClientEvents {
                     SpatialCamera.open();
                     if (SpatialCamera.isMenuCameraActive()) mc.setScreen(new SpatialMenuScreen());
                 }
+            }
+        }
+
+        @SubscribeEvent
+        public static void screenRenderPost(ScreenEvent.Render.Post event) {
+            if (!(event.getScreen() instanceof SpatialOptionsScreen)
+                    && !(event.getScreen() instanceof SpatialMultiplayerScreen)
+                    && !(event.getScreen() instanceof SpatialWorldScreen)) return;
+
+            int mx = event.getMouseX();
+            int my = event.getMouseY();
+            for (var child : event.getScreen().children()) {
+                if (!(child instanceof AbstractWidget widget) || !widget.visible) continue;
+                if (mx < widget.getX() || mx > widget.getX() + widget.getWidth()
+                        || my < widget.getY() || my > widget.getY() + widget.getHeight()) continue;
+                UiRenderer.roundedOutline(event.getGuiGraphics(),
+                        widget.getX() - 2, widget.getY() - 2,
+                        widget.getWidth() + 4, widget.getHeight() + 4,
+                        7, 1, 0x884F79C8, 0x12000000);
             }
         }
 
