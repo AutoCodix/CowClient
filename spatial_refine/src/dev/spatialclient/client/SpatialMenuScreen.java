@@ -46,6 +46,7 @@ public final class SpatialMenuScreen extends Screen {
         SpatialCamera.setMouse(mouseX, mouseY, width, height);
         HeadTracking.updateMouse(mouseX, mouseY, width, height);
         layout();
+        drawSpaceBackground(g, mouseX, mouseY);
 
         SpatialConfig cfg = SpatialConfig.get();
         int accent = 0xFF000000 | cfg.accentRgb;
@@ -66,11 +67,39 @@ public final class SpatialMenuScreen extends Screen {
     }
 
     private void drawBrand(GuiGraphics g, int accent) {
-        UiRenderer.roundedRect(g, panelX + 14, panelY + 14, 22, 22, 7, 0xFF191338);
-        UiRenderer.roundedRect(g, panelX + 20, panelY + 19, 10, 3, 2, accent);
-        UiRenderer.roundedRect(g, panelX + 18, panelY + 24, 14, 3, 2, 0xFFC7B7FF);
-        UiFont.draw(g, "Spatial Client", panelX + 44, panelY + 14, 0xFFF4F2FF, 0.38F, UiFont.Weight.SEMIBOLD);
-        UiFont.draw(g, "FORGE 1.20.1", panelX + 44, panelY + 28, 0xFF676D8B, 0.245F, UiFont.Weight.REGULAR);
+        int bx = panelX + 13;
+        int by = panelY + 12;
+        UiRenderer.roundedOutline(g, bx, by, 28, 28, 9, 1, 0xFF31467A, 0xFF070B1B);
+        // Tiny in-client version of the new Spatial S + orbit mark. No external font atlas.
+        UiRenderer.circle(g, bx + 9.0F, by + 14.0F, 6.4F, 0xFF0B1738);
+        UiRenderer.circle(g, bx + 9.0F, by + 14.0F, 4.4F, 0xFF7B46FF);
+        UiRenderer.circle(g, bx + 9.0F, by + 14.0F, 2.4F, 0xFFF1E9FF);
+        UiRenderer.roundedRect(g, bx + 15, by + 7, 8, 3, 2, 0xFF5CC8FF);
+        UiRenderer.roundedRect(g, bx + 13, by + 10, 4, 6, 2, 0xFF167EFF);
+        UiRenderer.roundedRect(g, bx + 16, by + 14, 7, 3, 2, 0xFF167EFF);
+        UiRenderer.roundedRect(g, bx + 20, by + 16, 4, 6, 2, 0xFF167EFF);
+        UiRenderer.roundedRect(g, bx + 14, by + 21, 9, 3, 2, 0xFF73D5FF);
+        g.fill(bx + 2, by + 12, bx + 26, by + 13, 0xCC9AC7FF);
+        g.fill(bx + 4, by + 20, bx + 25, by + 21, 0x996D68FF);
+        UiFont.draw(g, "Spatial Client", panelX + 48, panelY + 14, 0xFFF4F7FF, 0.38F, UiFont.Weight.SEMIBOLD);
+        UiFont.draw(g, "FORGE 1.20.1", panelX + 48, panelY + 28, 0xFF68779A, 0.245F, UiFont.Weight.REGULAR);
+    }
+
+    private void drawSpaceBackground(GuiGraphics g, int mouseX, int mouseY) {
+        g.fill(0, 0, width, height, 0xFF01040D);
+        float nx = width <= 0 ? 0.0F : (mouseX / (float) width - 0.5F);
+        float ny = height <= 0 ? 0.0F : (mouseY / (float) height - 0.5F);
+        int driftX = Math.round(nx * 7.0F);
+        int driftY = Math.round(ny * 4.0F);
+        for (int i = 0; i < 86; i++) {
+            int x = Math.floorMod(i * 173 + 47 + driftX * (1 + i % 3), Math.max(1, width));
+            int y = Math.floorMod(i * 97 + 31 + driftY * (1 + i % 2), Math.max(1, height));
+            int size = i % 17 == 0 ? 2 : 1;
+            int color = i % 13 == 0 ? 0xFFB8D8FF : (i % 9 == 0 ? 0xFF8B78FF : 0xFF40577F);
+            g.fill(x, y, x + size, y + size, color);
+        }
+        g.fill(0, 0, width, Math.max(1, height / 7), 0x18113A75);
+        g.fill(0, Math.max(0, height * 5 / 6), width, height, 0x18180B3A);
     }
 
     private void drawSidebar(GuiGraphics g, int mouseX, int mouseY, int accent) {
@@ -418,6 +447,28 @@ public final class SpatialMenuScreen extends Screen {
                 rows.add(cycle("Effects Corner", "Choose where the list grows from.", () -> pretty(c.effectsCorner.name()), () -> c.effectsCorner = next(c.effectsCorner, SpatialConfig.HudCorner.values())));
                 rows.add(toggle("Effect Durations", "Show remaining time beside every effect.", () -> c.effectsDuration, v -> c.effectsDuration = v));
                 rows.add(cycle("Effect Sort", "Sort effects by remaining duration or alphabetically.", () -> pretty(c.effectsSort.name()), () -> c.effectsSort = next(c.effectsSort, SpatialConfig.EffectSort.values())));
+
+                rows.add(toggle("CPS Counter", "Shows your real local left/right click rate.", () -> c.cpsHud, v -> c.cpsHud = v));
+                rows.add(cycle("CPS Scale", "Resize the CPS pill independently.", () -> scaleLabel(c.cpsScale), () -> c.cpsScale = nextFloat(c.cpsScale, .70F, 1.55F, .05F)));
+                rows.add(cycle("CPS Opacity", "CPS background transparency.", () -> pct(c.cpsOpacity), () -> c.cpsOpacity = nextFloat(c.cpsOpacity, .20F, 1.0F, .10F)));
+                rows.add(cycle("CPS Corner", "Anchor the CPS display in any corner.", () -> pretty(c.cpsCorner.name()), () -> c.cpsCorner = next(c.cpsCorner, SpatialConfig.HudCorner.values())));
+
+                rows.add(toggle("Clock", "Local system time in a compact Spatial pill.", () -> c.clockHud, v -> c.clockHud = v));
+                rows.add(toggle("Session Timer", "Time spent in the current world/session.", () -> c.sessionHud, v -> c.sessionHud = v));
+                rows.add(toggle("Biome", "Shows the local biome name.", () -> c.biomeHud, v -> c.biomeHud = v));
+                rows.add(toggle("Direction", "Compact cardinal direction display.", () -> c.directionHud, v -> c.directionHud = v));
+                rows.add(toggle("Memory", "Shows current Java heap usage.", () -> c.memoryHud, v -> c.memoryHud = v));
+                rows.add(toggle("Held Durability", "Shows remaining durability for your held item.", () -> c.durabilityHud, v -> c.durabilityHud = v));
+                rows.add(cycle("Info Corner", "Anchor clock/session/biome/direction/memory/durability together.", () -> pretty(c.infoCorner.name()), () -> c.infoCorner = next(c.infoCorner, SpatialConfig.HudCorner.values())));
+                rows.add(cycle("Info Scale", "Scale the compact information widgets.", () -> scaleLabel(c.infoScale), () -> c.infoScale = nextFloat(c.infoScale, .70F, 1.55F, .05F)));
+                rows.add(cycle("Info Opacity", "Transparency of compact information widgets.", () -> pct(c.infoOpacity), () -> c.infoOpacity = nextFloat(c.infoOpacity, .20F, 1.0F, .10F)));
+
+                rows.add(toggle("Inventory HUD", "Client-side hotbar inventory strip with a rounded selected slot.", () -> c.inventoryHud, v -> c.inventoryHud = v));
+                rows.add(cycle("Inventory Scale", "Resize the inventory strip.", () -> scaleLabel(c.inventoryScale), () -> c.inventoryScale = nextFloat(c.inventoryScale, .60F, 1.40F, .05F)));
+                rows.add(cycle("Inventory Opacity", "Inventory strip background transparency.", () -> pct(c.inventoryOpacity), () -> c.inventoryOpacity = nextFloat(c.inventoryOpacity, .20F, 1.0F, .10F)));
+                rows.add(toggle("Spatial Watermark", "Minimal centered Spatial branding.", () -> c.watermarkHud, v -> c.watermarkHud = v));
+                rows.add(toggle("Vignette", "Subtle dark screen-edge framing rendered locally.", () -> c.vignette, v -> c.vignette = v));
+                rows.add(cycle("Vignette Strength", "Darkness of the local screen-edge vignette.", () -> c.vignetteStrength + "%", () -> c.vignetteStrength = nextInt(c.vignetteStrength, 5, 80, 5)));
             }
             case COSMETICS -> {
                 rows.add(toggle("Player Aura", "Curved animated ribbons orbit only your own rendered player.", () -> c.aura, v -> c.aura = v));
@@ -463,6 +514,17 @@ public final class SpatialMenuScreen extends Screen {
                 rows.add(cycle("Menu Opacity", "Overall transparency of the compact floating menu surface.", () -> c.menuOpacity + "%", () -> c.menuOpacity = nextInt(c.menuOpacity, 45, 95, 5)));
                 rows.add(cycle("Menu Scale", "Resize the compact floating panel without stretching it across the screen.", () -> scaleLabel(c.menuScale), () -> c.menuScale = nextFloat(c.menuScale, .72F, 1.00F, .04F)));
                 rows.add(cycle("Corner Radius", "Roundness of the main menu shell.", () -> c.menuRadius + "px", () -> c.menuRadius = nextInt(c.menuRadius, 8, 20, 2)));
+                rows.add(cycle("Local Config Manager", "Create, save, load, duplicate, rename and delete local JSON configs.", () -> "OPEN", () -> {
+                    if (minecraft != null) minecraft.setScreen(new SpatialProfilesScreen(this));
+                }));
+                rows.add(cycle("Skin Studio", "Built-in 64x64 local skin pixel editor with PNG export.", () -> "OPEN", () -> {
+                    if (minecraft != null) minecraft.setScreen(new SkinEditorScreen(this));
+                }));
+                rows.add(cycle("Local Account", "Sign out of the local Spatial profile. Password hashes stay on this device.", () -> SpatialLocalAccount.username(), () -> {
+                    SpatialLocalAccount.lock();
+                    SpatialCamera.forceRestore();
+                    if (minecraft != null) minecraft.setScreen(new SpatialAccountScreen());
+                }));
                 rows.add(cycle("Reset Everything", "Restore every Spatial visual, HUD, cosmetic and camera preference.", () -> "RESET", SpatialMenuScreen::resetVisuals));
             }
             default -> {}
@@ -472,10 +534,10 @@ public final class SpatialMenuScreen extends Screen {
     private static int countFor(SpatialSection s) {
         return switch (s) {
             case VISUALS -> 9;
-            case HUD -> 31;
+            case HUD -> 51;
             case COSMETICS -> 22;
             case CAMERA -> 13;
-            case SETTINGS -> 5;
+            case SETTINGS -> 8;
             default -> 0;
         };
     }
@@ -531,6 +593,9 @@ public final class SpatialMenuScreen extends Screen {
         c.keystrokesHud = true; c.keystrokesScale = 1; c.keystrokesOpacity = .72F; c.keystrokesCorner = SpatialConfig.HudCorner.BOTTOM_LEFT; c.keystrokesMouseButtons = true;
         c.armorHud = true; c.armorScale = 1; c.armorAnchor = SpatialConfig.ArmorAnchor.ABOVE_HOTBAR; c.armorDurability = true;
         c.effectsHud = true; c.effectsScale = 1; c.effectsOpacity = .72F; c.effectsCorner = SpatialConfig.HudCorner.TOP_RIGHT; c.effectsDuration = true; c.effectsSort = SpatialConfig.EffectSort.DURATION;
+        c.cpsHud = true; c.cpsScale = .95F; c.cpsOpacity = .72F; c.cpsCorner = SpatialConfig.HudCorner.TOP_LEFT; c.cpsAccentBar = true;
+        c.clockHud = false; c.sessionHud = false; c.biomeHud = false; c.directionHud = false; c.memoryHud = false; c.durabilityHud = false; c.infoCorner = SpatialConfig.HudCorner.TOP_RIGHT; c.infoScale = .90F; c.infoOpacity = .68F;
+        c.inventoryHud = false; c.inventoryScale = .85F; c.inventoryOpacity = .68F; c.watermarkHud = true; c.vignette = false; c.vignetteStrength = 28; c.toggleNotifications = true;
         c.aura = true; c.auraStyle = SpatialConfig.AuraStyle.ORBIT; c.auraIntensity = 2; c.auraSpeed = 1; c.auraRadius = .52F; c.auraHeight = 1.75F; c.auraWidth = .055F; c.auraWave = .12F; c.auraOpacity = .72F; c.auraUseAccent = true; c.auraColorRgb = 0x7700FF;
         c.halo = true; c.haloStyle = SpatialConfig.HaloStyle.CLEAN_RING; c.haloSpeed = .8F; c.haloRadius = .43F; c.haloHeight = 2.02F; c.haloWidth = .04F; c.haloTilt = 11; c.haloOpacity = .72F; c.haloUseAccent = true; c.haloColorRgb = 0x7700FF;
         c.headFollow = true; c.headFollowYaw = 28; c.headFollowPitch = 16; c.headFollowSpeed = .18F; c.bodyFacesCamera = true;
