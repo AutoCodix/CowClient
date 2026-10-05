@@ -45,8 +45,7 @@ public final class SpatialMenuTheme {
     }
 
     public static void drawPanelSpace(GuiGraphics g, int x, int y, int w, int h, int mouseX, int mouseY) {
-        g.enableScissor(x, y, x + w, y + h);
-        g.fill(x, y, x + w, y + h, 0xEE070B18);
+        g.enableScissor(x + 5, y + 5, x + w - 5, y + h - 5);
         long now = System.nanoTime();
         float t = (now % 32_000_000_000L) / 1_000_000_000.0F;
         float nx = w <= 0 ? 0.0F : (mouseX - x) / (float)w - 0.5F;
